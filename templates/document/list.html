@@ -1,0 +1,53 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách tài liệu{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: white;">📄 Quản lý tài liệu</h1>
+    <a href="{{ url_for('document.create_document') }}" class="btn btn-success">➕ Tạo tài liệu</a>
+</div>
+
+<div class="card">
+    {% if documents %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Tiêu đề</th>
+                <th>Loại file</th>
+                <th>Ngày tạo</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for doc in documents %}
+            <tr>
+                <td>
+                    <strong>{{ doc.title }}</strong><br>
+                    <small style="color: #666;">{{ doc.description[:100] }}</small>
+                </td>
+                <td>
+                    <span class="badge badge-info">{{ doc.file_type|upper }}</span>
+                </td>
+                <td>{{ doc.created_at|datetime }}</td>
+                <td>
+                    <div class="d-flex gap-1">
+                        <a href="{{ url_for('document.view_document', document_id=doc._id) }}" class="btn btn-sm btn-primary">Xem</a>
+                        <a href="{{ url_for('document.edit_document', document_id=doc._id) }}" class="btn btn-sm btn-secondary">Sửa</a>
+                        <form method="POST" action="{{ url_for('document.delete_document', document_id=doc._id) }}" style="display: inline;" onsubmit="return confirm('Bạn có chắc muốn xóa tài liệu này?');">
+                            <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                        </form>
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div style="text-align: center; padding: 4rem;">
+        <p style="color: #666; font-size: 1.2rem; margin-bottom: 1rem;">Chưa có tài liệu nào</p>
+        <a href="{{ url_for('document.create_document') }}" class="btn btn-primary">Tạo tài liệu đầu tiên</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,67 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Giáo viên{% endblock %}
+
+{% block content %}
+<h1 style="color: white; margin-bottom: 2rem;">👨‍🏫 Dashboard Giáo viên</h1>
+
+<div class="grid grid-3">
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">📄 Tài liệu</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #333;">{{ documents|length }}</p>
+        <a href="{{ url_for('document.list_documents') }}" class="btn btn-primary btn-sm mt-2">Quản lý tài liệu</a>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">📝 Đề thi</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #333;">{{ exams|length }}</p>
+        <a href="{{ url_for('exam.list_exams') }}" class="btn btn-primary btn-sm mt-2">Quản lý đề thi</a>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">➕ Tạo mới</h3>
+        <div class="d-flex" style="flex-direction: column; gap: 0.5rem;">
+            <a href="{{ url_for('document.create_document') }}" class="btn btn-success btn-sm">Tạo tài liệu</a>
+            <a href="{{ url_for('exam.create_exam') }}" class="btn btn-success btn-sm">Tạo đề thi</a>
+        </div>
+    </div>
+</div>
+
+<div class="grid grid-2 mt-3">
+    <div class="card">
+        <h3 class="card-header">📄 Tài liệu gần đây</h3>
+        {% if documents %}
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for doc in documents[:5] %}
+            <div style="padding: 1rem; border-bottom: 1px solid #e0e0e0;">
+                <h4 style="color: #333; margin-bottom: 0.5rem;">{{ doc.title }}</h4>
+                <p style="color: #666; font-size: 0.9rem;">{{ doc.created_at|datetime }}</p>
+                <a href="{{ url_for('document.view_document', document_id=doc._id) }}" class="btn btn-sm btn-primary mt-1">Xem</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">Chưa có tài liệu nào</p>
+        {% endif %}
+    </div>
+    
+    <div class="card">
+        <h3 class="card-header">📝 Đề thi gần đây</h3>
+        {% if exams %}
+        <div style="max-height: 400px; overflow-y: auto;">
+            {% for exam in exams[:5] %}
+            <div style="padding: 1rem; border-bottom: 1px solid #e0e0e0;">
+                <h4 style="color: #333; margin-bottom: 0.5rem;">{{ exam.title }}</h4>
+                <p style="color: #666; font-size: 0.9rem;">
+                    {{ exam.question_count }} câu | {{ exam.duration }} phút
+                </p>
+                <a href="{{ url_for('exam.view_exam', exam_id=exam._id) }}" class="btn btn-sm btn-primary mt-1">Xem</a>
+            </div>
+            {% endfor %}
+        </div>
+        {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">Chưa có đề thi nào</p>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

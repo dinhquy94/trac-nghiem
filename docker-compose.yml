@@ -1,0 +1,77 @@
+version: '3.8'
+
+services:
+  # MongoDB Database
+  mongodb:
+    image: mongo:7.0
+    container_name: exam_mongodb
+    ports:
+      - "27017:27017"
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: admin
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_ROOT_PASSWORD:-password}
+      MONGO_INITDB_DATABASE: exam_system
+    volumes:
+      - mongodb_data:/data/db
+      - mongodb_config:/data/configdb
+    networks:
+      - exam_network
+    restart: unless-stopped
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  # Flask Application
+  web:
+    build: .
+    container_name: exam_web
+    ports:
+      - "8000:8000"
+    environment:
+      FLASK_ENV: production
+      FLASK_SECRET_KEY: ${FLASK_SECRET_KEY:-your-secret-key-here-change-this}
+      MONGO_URI: mongodb://admin:${MONGO_ROOT_PASSWORD:-password}@mongodb:27017/exam_system?authSource=admin
+      GEMINI_API_KEY: ${GEMINI_API_KEY}
+      UPLOAD_FOLDER: /app/uploads
+      MAX_CONTENT_LENGTH: 16777216
+    volumes:
+      - ./uploads:/app/uploads
+      - ./logs:/app/logs
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - exam_network
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 10s
+
+  # Nginx Reverse Proxy (optional but recommended)
+  nginx:
+    image: nginx:alpine
+    container_name: exam_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./certs:/etc/nginx/certs:ro
+    depends_on:
+      - web
+    networks:
+      - exam_network
+    restart: unless-stopped
+
+volumes:
+  mongodb_data:
+  mongodb_config:
+
+networks:
+  exam_network:
+    driver: bridge

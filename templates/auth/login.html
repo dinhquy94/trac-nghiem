@@ -1,0 +1,25 @@
+{% extends "base.html" %}
+
+{% block title %}Đăng nhập{% endblock %}
+
+{% block content %}
+<div style="max-width: 400px; margin: 4rem auto;">
+    <div class="card">
+        <h2 class="card-header text-center">🔐 Đăng nhập</h2>
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Tên đăng nhập</label>
+                <input type="text" name="username" class="form-control" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mật khẩu</label>
+                <input type="password" name="password" class="form-control" required>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">Đăng nhập</button>
+        </form>
+        <p class="text-center mt-3">
+            Chưa có tài khoản? <a href="{{ url_for('auth.register') }}" style="color: #667eea;">Đăng ký ngay</a>
+        </p>
+    </div>
+</div>
+{% endblock %}

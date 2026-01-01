@@ -1,0 +1,65 @@
+{% extends "base.html" %}
+
+{% block title %}Tạo tài liệu{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 800px; margin: 0 auto;">
+    <h2 class="card-header">📄 Tạo tài liệu mới</h2>
+    
+    <form method="POST" enctype="multipart/form-data" id="documentForm">
+        <div class="form-group">
+            <label class="form-label">Tiêu đề <span style="color: red;">*</span></label>
+            <input type="text" name="title" class="form-control" required>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Mô tả</label>
+            <textarea name="description" class="form-control" rows="3"></textarea>
+        </div>
+        
+        <div class="form-group">
+            <label class="form-label">Loại nội dung <span style="color: red;">*</span></label>
+            <select name="content_type" id="contentType" class="form-control" required>
+                <option value="file">Tải lên file (PDF, DOCX, TXT)</option>
+                <option value="markdown">Nhập nội dung Markdown</option>
+            </select>
+        </div>
+        
+        <div class="form-group" id="fileUpload">
+            <label class="form-label">Chọn file</label>
+            <input type="file" name="file" class="form-control" accept=".pdf,.docx,.txt,.md">
+            <small style="color: #666;">Hỗ trợ: PDF, DOCX, TXT, MD (Tối đa 16MB)</small>
+        </div>
+        
+        <div class="form-group" id="markdownInput" style="display: none;">
+            <label class="form-label">Nội dung Markdown</label>
+            <textarea name="markdown_content" class="form-control" rows="15" placeholder="# Tiêu đề&#10;&#10;Nội dung của bạn..."></textarea>
+            <small style="color: #666;">Hỗ trợ cú pháp Markdown</small>
+        </div>
+        
+        <div class="d-flex gap-2">
+            <button type="submit" class="btn btn-primary">Tạo tài liệu</button>
+            <a href="{{ url_for('document.list_documents') }}" class="btn btn-secondary">Hủy</a>
+        </div>
+    </form>
+</div>
+
+<script>
+document.getElementById('contentType').addEventListener('change', function() {
+    const fileUpload = document.getElementById('fileUpload');
+    const markdownInput = document.getElementById('markdownInput');
+    
+    if (this.value === 'file') {
+        fileUpload.style.display = 'block';
+        markdownInput.style.display = 'none';
+        document.querySelector('input[name="file"]').required = true;
+        document.querySelector('textarea[name="markdown_content"]').required = false;
+    } else {
+        fileUpload.style.display = 'none';
+        markdownInput.style.display = 'block';
+        document.querySelector('input[name="file"]').required = false;
+        document.querySelector('textarea[name="markdown_content"]').required = true;
+    }
+});
+</script>
+{% endblock %}

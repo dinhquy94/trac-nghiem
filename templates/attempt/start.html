@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+
+{% block title %}Bắt đầu thi - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="card" style="max-width: 700px; margin: 2rem auto;">
+    <h2 class="card-header text-center">📝 {{ exam.title }}</h2>
+    
+    <div style="text-align: center; padding: 2rem;">
+        <div style="background: #f8f9fa; padding: 2rem; border-radius: 8px; margin-bottom: 2rem;">
+            <h3 style="color: #333; margin-bottom: 1.5rem;">📋 Thông tin đề thi</h3>
+            <div style="text-align: left; max-width: 400px; margin: 0 auto;">
+                <p><strong>⏱️ Thời gian:</strong> {{ exam.duration }} phút</p>
+                <p><strong>📄 Số câu hỏi:</strong> {{ question_count }}</p>
+                <p><strong>📊 Tổng điểm:</strong> {{ exam.total_points }}</p>
+                <p><strong>🎯 Điểm đạt:</strong> {{ exam.passing_score }}%</p>
+            </div>
+        </div>
+        
+        {% if exam.description %}
+        <div style="background: #e8f4f8; padding: 1.5rem; border-radius: 8px; margin-bottom: 2rem; text-align: left;">
+            <strong>📌 Mô tả:</strong>
+            <p style="margin-top: 0.5rem;">{{ exam.description }}</p>
+        </div>
+        {% endif %}
+        
+        {% if previous_attempts %}
+        <div style="text-align: left; margin-bottom: 2rem;">
+            <h4 style="color: #333; margin-bottom: 1rem;">📊 Lượt thi trước</h4>
+            <div style="max-height: 200px; overflow-y: auto;">
+                {% for attempt in previous_attempts[:5] %}
+                <div style="padding: 0.75rem; background: #f8f9fa; border-radius: 4px; margin-bottom: 0.5rem;">
+                    <strong>{{ attempt.created_at|datetime }}</strong>
+                    {% if attempt.status == 'graded' %}
+                        - Điểm: {{ attempt.percentage }}%
+                        {% if attempt.passed %}
+                            <span class="badge badge-success">Đạt</span>
+                        {% else %}
+                            <span class="badge badge-danger">Không đạt</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+                {% endfor %}
+            </div>
+        </div>
+        {% endif %}
+        
+        <div style="background: #fff3cd; padding: 1rem; border-radius: 8px; margin-bottom: 2rem; border-left: 4px solid #ffc107;">
+            <strong>⚠️ Lưu ý:</strong>
+            <ul style="text-align: left; margin: 0.5rem 0 0 1.5rem; padding: 0;">
+                <li>Bạn phải hoàn thành bài thi trong thời gian quy định</li>
+                <li>Không được tải lại trang khi đang làm bài</li>
+                <li>Bạn có thể xem lại đáp án sau khi nộp bài</li>
+            </ul>
+        </div>
+        
+        <form method="POST">
+            <button type="submit" class="btn btn-success" style="font-size: 1.2rem; padding: 1rem 3rem;">
+                🚀 Bắt đầu làm bài
+            </button>
+        </form>
+        
+        <a href="{{ url_for('exam.list_exams') }}" class="btn btn-secondary mt-2">⬅️ Quay lại</a>
+    </div>
+</div>
+{% endblock %}

@@ -1,0 +1,160 @@
+{% extends "base.html" %}
+
+{% block title %}{{ exam.title }}{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: white;">📝 {{ exam.title }}</h1>
+    <div class="d-flex gap-2">
+        {% if session.role == 'teacher' and exam.owner_id|string == session.user_id %}
+            <a href="{{ url_for('exam.edit_exam', exam_id=exam._id) }}" class="btn btn-secondary">✏️ Sửa</a>
+            <a href="{{ url_for('exam.export_pdf', exam_id=exam._id) }}?shuffle_questions=0&shuffle_answers=0&include_answers=0" class="btn btn-success">📄 Xuất PDF</a>
+        {% endif %}
+        <a href="{{ url_for('exam.list_exams') }}" class="btn btn-primary">⬅️ Quay lại</a>
+    </div>
+</div>
+
+<div class="grid grid-3">
+    <div class="card">
+        <h3 style="color: #667eea;">⏱️ Thời gian</h3>
+        <p style="font-size: 1.5rem; font-weight: bold;">{{ exam.duration }} phút</p>
+    </div>
+    <div class="card">
+        <h3 style="color: #667eea;">📄 Số câu hỏi</h3>
+        <p style="font-size: 1.5rem; font-weight: bold;">{{ exam.question_count }} câu</p>
+    </div>
+    <div class="card">
+        <h3 style="color: #667eea;">🎯 Điểm đạt</h3>
+        <p style="font-size: 1.5rem; font-weight: bold;">{{ exam.passing_score }}%</p>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <h3 class="card-header">📋 Thông tin</h3>
+    <p style="color: #666;">{{ exam.description }}</p>
+    
+    <div style="margin-top: 1rem;">
+        <strong>Phân bố độ khó:</strong>
+        <div class="d-flex gap-2 mt-1">
+            <span class="badge badge-success">Dễ: {{ exam.difficulty_distribution.easy }}</span>
+            <span class="badge badge-warning">Trung bình: {{ exam.difficulty_distribution.medium }}</span>
+            <span class="badge badge-danger">Khó: {{ exam.difficulty_distribution.hard }}</span>
+        </div>
+    </div>
+    
+    <div style="margin-top: 1rem;">
+        <strong>Trạng thái:</strong>
+        {% if exam.is_public %}
+            <span class="badge badge-success">Công khai</span>
+        {% else %}
+            <span class="badge badge-warning">Riêng tư</span>
+        {% endif %}
+    </div>
+    
+    {% if session.role == 'student' and exam.is_public %}
+    <div style="margin-top: 2rem;">
+        <a href="{{ url_for('attempt.start_exam', exam_id=exam._id) }}" class="btn btn-success" style="font-size: 1.2rem;">🚀 Bắt đầu làm bài</a>
+    </div>
+    {% endif %}
+</div>
+
+{% if statistics and session.role == 'teacher' %}
+<div class="card mt-3">
+    <h3 class="card-header">📊 Thống kê</h3>
+    <div class="grid grid-3">
+        <div>
+            <strong>Tổng lượt thi:</strong>
+            <p style="font-size: 1.5rem; color: #667eea;">{{ statistics.total_attempts }}</p>
+        </div>
+        <div>
+            <strong>Điểm trung bình:</strong>
+            <p style="font-size: 1.5rem; color: #667eea;">{{ statistics.avg_score|round(1) }}%</p>
+        </div>
+        <div>
+            <strong>Tỷ lệ đậu:</strong>
+            <p style="font-size: 1.5rem; color: #667eea;">{{ statistics.pass_rate|round(1) }}%</p>
+        </div>
+    </div>
+</div>
+
+{% if attempts %}
+<div class="card mt-3">
+    <h3 class="card-header">📝 Danh sách điểm thi</h3>
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 40%;">Học sinh</th>
+                <th>Thời gian làm bài</th>
+                <th>Điểm</th>
+                <th>Kết quả</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attempt in attempts %}
+            <tr>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <img src="{{ attempt.student_info.avatar_url|default_avatar(attempt.student_info.username) }}" alt="Avatar" style="width: 36px; height: 36px; border-radius: 50%; border: 2px solid #667eea;" onerror="this.src='https://ui-avatars.com/api/?name={{ attempt.student_info.username }}&background=667eea&color=fff&size=128'">
+                        <div>
+                            <div style="font-weight: 600;">{{ attempt.student_info.full_name or attempt.student_info.username }}</div>
+                            <div style="font-size: 0.85rem; color: #666;">@{{ attempt.student_info.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td>{{ attempt.created_at|datetime }}</td>
+                <td>
+                    <strong style="font-size: 1.1rem; color: {% if attempt.passed %}#28a745{% else %}#dc3545{% endif %};">
+                        {{ attempt.score }}/{{ attempt.max_score }}
+                    </strong>
+                    <div style="font-size: 0.9rem; color: #666;">({{ attempt.percentage }}%)</div>
+                </td>
+                <td>
+                    {% if attempt.passed %}
+                        <span class="badge badge-success">✓ Đạt</span>
+                    {% else %}
+                        <span class="badge badge-danger">✗ Không đạt</span>
+                    {% endif %}
+                </td>
+                <td>
+                    <a href="{{ url_for('attempt.view_result', attempt_id=attempt._id) }}" class="btn btn-sm btn-primary">Xem chi tiết</a>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endif %}
+{% endif %}
+
+<div class="card mt-3">
+    <h3 class="card-header">❓ Câu hỏi ({{ questions|length }})</h3>
+    {% if questions %}
+        {% for q in questions %}
+        <div style="padding: 1.5rem; border-bottom: 1px solid #e0e0e0;">
+            <div class="d-flex justify-between align-center mb-2">
+                <strong>Câu {{ loop.index }}: {{ q.question_text }}</strong>
+                <span class="badge badge-{{ 'success' if q.difficulty == 'easy' else ('warning' if q.difficulty == 'medium' else 'danger') }}">
+                    {{ q.difficulty }}
+                </span>
+            </div>
+            
+            {% if q.question_type == 'multiple_choice' %}
+            <div style="margin-left: 1rem;">
+                {% for opt in q.options %}
+                <div>{{ opt }}</div>
+                {% endfor %}
+            </div>
+            {% elif q.question_type == 'true_false' %}
+            <div style="margin-left: 1rem;">
+                <div>A. Đúng</div>
+                <div>B. Sai</div>
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">Đề thi chưa có câu hỏi</p>
+    {% endif %}
+</div>
+{% endblock %}

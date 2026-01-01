@@ -1,0 +1,198 @@
+{% extends "base.html" %}
+
+{% block title %}Làm bài thi - {{ exam.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.exam-container {
+    max-width: 900px;
+    margin: 0 auto;
+}
+.timer {
+    position: fixed;
+    top: 100px;
+    right: 20px;
+    background: white;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+    z-index: 100;
+}
+.timer-value {
+    font-size: 2rem;
+    font-weight: bold;
+    color: #667eea;
+}
+.question-card {
+    background: white;
+    padding: 2rem;
+    border-radius: 12px;
+    margin-bottom: 1.5rem;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+}
+.option-label {
+    display: block;
+    padding: 1rem;
+    border: 2px solid #e0e0e0;
+    border-radius: 8px;
+    margin-bottom: 0.75rem;
+    cursor: pointer;
+    transition: all 0.3s;
+}
+.option-label:hover {
+    border-color: #667eea;
+    background: #f8f9fa;
+}
+.option-label input:checked + span {
+    color: #667eea;
+    font-weight: bold;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+{% if exam.exam_type == 'test' and exam.duration > 0 %}
+<div class="timer">
+    <div style="text-align: center;">
+        <div style="color: #666; margin-bottom: 0.5rem;">⏱️ Thời gian còn lại</div>
+        <div class="timer-value" id="timer">{{ exam.duration }}:00</div>
+    </div>
+</div>
+{% endif %}
+
+<div class="exam-container">
+    <div class="card">
+        <h2 class="card-header text-center">
+            📝 {{ exam.title }}
+            {% if exam.exam_type == 'practice' %}
+            <span class="badge badge-info" style="font-size: 0.6em;">Ôn tập</span>
+            {% endif %}
+        </h2>
+        <div style="text-align: center; color: #666; margin-bottom: 2rem;">
+            {{ questions|length }} câu hỏi | {{ exam.total_points }} điểm
+            {% if exam.exam_type == 'practice' %}
+            <br><small style="color: #28a745;">Đề ôn tập - Không giới hạn thời gian</small>
+            {% endif %}
+        </div>
+    </div>
+    
+    <form id="examForm" method="POST" action="{{ url_for('attempt.submit_exam', attempt_id=attempt._id) }}">
+        {% for question in questions %}
+        <div class="question-card">
+            <h3 style="color: #333; margin-bottom: 1rem;">
+                Câu {{ loop.index }}: {{ question.question_text }}
+                <span class="badge badge-info">{{ question.points }} điểm</span>
+            </h3>
+            
+            {% if question.question_type == 'multiple_choice' %}
+                {% for option in question.options %}
+                <label class="option-label">
+                    <input type="radio" name="question_{{ question._id }}" value="{{ option[0] }}" style="display: none;" required>
+                    <span>{{ option }}</span>
+                </label>
+                {% endfor %}
+            {% elif question.question_type == 'true_false' %}
+                <label class="option-label">
+                    <input type="radio" name="question_{{ question._id }}" value="Đúng" style="display: none;" required>
+                    <span>A. Đúng</span>
+                </label>
+                <label class="option-label">
+                    <input type="radio" name="question_{{ question._id }}" value="Sai" style="display: none;" required>
+                    <span>B. Sai</span>
+                </label>
+            {% elif question.question_type == 'essay' %}
+                <textarea name="question_{{ question._id }}" class="form-control" rows="5" placeholder="Nhập câu trả lời của bạn..." required></textarea>
+            {% endif %}
+        </div>
+        {% endfor %}
+        
+        <div class="card text-center">
+            <button type="submit" class="btn btn-success" style="font-size: 1.2rem; padding: 1rem 3rem;" onclick="return confirm('Bạn có chắc muốn nộp bài?');">
+                ✅ Nộp bài
+            </button>
+        </div>
+    </form>
+</div>
+
+<script>
+{% if exam.exam_type == 'test' and exam.duration > 0 %}
+// Timer countdown
+let duration = {{ exam.duration }} * 60; // Convert to seconds
+const timerElement = document.getElementById('timer');
+
+function updateTimer() {
+    const minutes = Math.floor(duration / 60);
+    const seconds = duration % 60;
+    timerElement.textContent = `${minutes.toString().padStart(2, '0')}:${seconds.toString().padStart(2, '0')}`;
+    
+    if (duration <= 0) {
+        alert('Hết giờ! Bài thi sẽ được tự động nộp.');
+        document.getElementById('examForm').submit();
+        return;
+    }
+    
+    // Change color when time is running out
+    if (duration <= 300) { // 5 minutes
+        timerElement.style.color = '#dc3545';
+    } else if (duration <= 600) { // 10 minutes
+        timerElement.style.color = '#ffc107';
+    }
+    
+    duration--;
+    setTimeout(updateTimer, 1000);
+}
+
+updateTimer();
+{% endif %}
+
+// Add click handler to option labels
+document.querySelectorAll('.option-label').forEach(label => {
+    label.addEventListener('click', function() {
+        const input = this.querySelector('input');
+        if (input.type === 'radio') {
+            // Uncheck all other options in the same group
+            const name = input.name;
+            document.querySelectorAll(`input[name="${name}"]`).forEach(radio => {
+                radio.closest('.option-label').style.borderColor = '#e0e0e0';
+                radio.closest('.option-label').style.background = 'white';
+            });
+            // Check this option
+            input.checked = true;
+            this.style.borderColor = '#667eea';
+            this.style.background = '#f0f4ff';
+        }
+    });
+});
+
+// Warn before leaving page
+window.addEventListener('beforeunload', function(e) {
+    e.preventDefault();
+    e.returnValue = '';
+});
+
+// Form submit handler
+document.getElementById('examForm').addEventListener('submit', function(e) {
+    e.preventDefault();
+    
+    const formData = new FormData(this);
+    
+    fetch(this.action, {
+        method: 'POST',
+        body: formData
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            window.removeEventListener('beforeunload', arguments.callee);
+            window.location.href = data.redirect;
+        } else {
+            alert('Có lỗi xảy ra: ' + data.message);
+        }
+    })
+    .catch(error => {
+        alert('Có lỗi xảy ra khi nộp bài');
+        console.error(error);
+    });
+});
+</script>
+{% endblock %}

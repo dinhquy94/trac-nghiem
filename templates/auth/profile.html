@@ -1,0 +1,123 @@
+{% extends "base.html" %}
+
+{% block title %}Thông tin cá nhân{% endblock %}
+
+{% block content %}
+<div style="max-width: 600px; margin: 0 auto;">
+    <h1 style="color: white; margin-bottom: 2rem; text-align: center;">👤 Thông tin cá nhân</h1>
+    
+    <div class="card">
+        <div style="text-align: center; padding: 2rem 0;">
+            <img src="{{ user.avatar_url|default_avatar(user.username) }}" alt="Avatar" style="width: 120px; height: 120px; border-radius: 50%; border: 4px solid #667eea; margin-bottom: 1rem;" onerror="this.src='https://ui-avatars.com/api/?name={{ user.username }}&background=667eea&color=fff&size=128'">
+            <h2 style="color: #333; margin-bottom: 0.5rem;">{{ user.full_name or user.username }}</h2>
+            <p style="color: #666;">@{{ user.username }}</p>
+            {% if user.role == 'student' %}
+            <div style="margin-top: 1rem;">
+                <span style="background: linear-gradient(135deg, #ffd700, #ffed4e); padding: 0.6rem 1.2rem; border-radius: 25px; font-weight: bold; font-size: 1.3rem; display: inline-block;">
+                    🏆 {{ user.medals or 0 }} Huy chương
+                </span>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <div class="card mt-3">
+        <h3 class="card-header">📝 Cập nhật thông tin</h3>
+        <form method="POST" action="{{ url_for('auth.update_profile') }}" enctype="multipart/form-data">
+            <div class="form-group">
+                <label class="form-label">Họ và tên</label>
+                <input type="text" name="full_name" class="form-control" value="{{ user.full_name }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" name="email" class="form-control" value="{{ user.email }}" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">🖼️ Ảnh đại diện</label>
+                
+                <!-- File upload option -->
+                <div style="margin-bottom: 1rem;">
+                    <label for="avatar_file" class="btn btn-secondary" style="display: inline-block; cursor: pointer; margin-bottom: 0.5rem;">
+                        📤 Chọn ảnh từ máy tính
+                    </label>
+                    <input type="file" id="avatar_file" name="avatar_file" accept="image/*" style="display: none;" onchange="previewAvatar(this)">
+                    <div id="preview-container" style="margin-top: 0.5rem; display: none;">
+                        <img id="avatar-preview" src="" alt="Preview" style="max-width: 150px; max-height: 150px; border-radius: 10px; border: 2px solid #667eea;">
+                        <button type="button" onclick="clearPreview()" class="btn btn-sm btn-danger" style="display: block; margin-top: 0.5rem;">❌ Hủy ảnh</button>
+                    </div>
+                </div>
+                
+                <!-- URL option -->
+                <div style="margin-bottom: 0.5rem;">
+                    <span style="color: #666; font-size: 0.9rem; display: block; margin-bottom: 0.3rem;">Hoặc nhập URL ảnh:</span>
+                    <input type="url" name="avatar_url" id="avatar_url" class="form-control" value="{{ user.avatar_url }}" placeholder="https://example.com/avatar.jpg">
+                </div>
+                
+                <small style="color: #666; display: block; margin-top: 0.5rem;">
+                    Hỗ trợ: JPG, PNG, GIF, WEBP (tối đa 5MB). Để trống để sử dụng ảnh mặc định.
+                </small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary" style="width: 100%;">💾 Cập nhật thông tin</button>
+        </form>
+    </div>
+    
+    <script>
+    function previewAvatar(input) {
+        const file = input.files[0];
+        if (file) {
+            // Check file size (5MB max)
+            if (file.size > 5 * 1024 * 1024) {
+                alert('Kích thước ảnh không được vượt quá 5MB!');
+                input.value = '';
+                return;
+            }
+            
+            // Show preview
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                document.getElementById('avatar-preview').src = e.target.result;
+                document.getElementById('preview-container').style.display = 'block';
+                // Clear URL input when file is selected
+                document.getElementById('avatar_url').value = '';
+            };
+            reader.readAsDataURL(file);
+        }
+    }
+    
+    function clearPreview() {
+        document.getElementById('avatar_file').value = '';
+        document.getElementById('preview-container').style.display = 'none';
+        document.getElementById('avatar-preview').src = '';
+    }
+    </script>
+    
+    <div class="card mt-3">
+        <h3 class="card-header">🔒 Đổi mật khẩu</h3>
+        <form method="POST" action="{{ url_for('auth.change_password') }}">
+            <div class="form-group">
+                <label class="form-label">Mật khẩu hiện tại</label>
+                <input type="password" name="current_password" class="form-control" required>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Mật khẩu mới</label>
+                <input type="password" name="new_password" class="form-control" required minlength="6">
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Xác nhận mật khẩu mới</label>
+                <input type="password" name="confirm_password" class="form-control" required>
+            </div>
+            
+            <button type="submit" class="btn btn-warning" style="width: 100%;">Đổi mật khẩu</button>
+        </form>
+    </div>
+    
+    <div class="text-center mt-3">
+        <a href="{{ url_for('main.index') }}" class="btn btn-secondary">⬅️ Quay lại</a>
+    </div>
+</div>
+{% endblock %}

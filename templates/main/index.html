@@ -1,0 +1,31 @@
+{% extends "base.html" %}
+
+{% block title %}Trang chủ{% endblock %}
+
+{% block content %}
+<div style="text-align: center; padding: 4rem 0;">
+    <div class="card" style="max-width: 600px; margin: 0 auto;">
+        <h1 style="font-size: 2.5rem; margin-bottom: 1rem; color: #667eea;">
+            📚 Hệ thống Thi Trực tuyến
+        </h1>
+        <p style="font-size: 1.2rem; color: #666; margin-bottom: 2rem;">
+            Tạo và quản lý đề thi với sự hỗ trợ của AI
+        </p>
+        <div class="d-flex gap-2" style="justify-content: center;">
+            <a href="{{ url_for('auth.login') }}" class="btn btn-primary">Đăng nhập</a>
+            <a href="{{ url_for('auth.register') }}" class="btn btn-secondary">Đăng ký</a>
+        </div>
+        
+        <div style="margin-top: 3rem; text-align: left;">
+            <h3 style="color: #333; margin-bottom: 1rem;">✨ Tính năng nổi bật:</h3>
+            <ul style="list-style: none; padding: 0;">
+                <li style="padding: 0.5rem 0; color: #666;">✓ Tạo đề thi tự động bằng AI</li>
+                <li style="padding: 0.5rem 0; color: #666;">✓ Quản lý tài liệu và câu hỏi</li>
+                <li style="padding: 0.5rem 0; color: #666;">✓ Xuất đề thi ra PDF</li>
+                <li style="padding: 0.5rem 0; color: #666;">✓ Thi trực tuyến và chấm điểm tự động</li>
+                <li style="padding: 0.5rem 0; color: #666;">✓ Theo dõi kết quả học tập</li>
+            </ul>
+        </div>
+    </div>
+</div>
+{% endblock %}

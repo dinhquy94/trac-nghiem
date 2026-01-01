@@ -1,0 +1,68 @@
+{% extends "base.html" %}
+
+{% block title %}Danh sách đề thi{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: white;">📝 Danh sách đề thi</h1>
+    {% if session.role == 'teacher' %}
+    <a href="{{ url_for('exam.create_exam') }}" class="btn btn-success">➕ Tạo đề thi</a>
+    {% endif %}
+</div>
+
+<div class="card">
+    {% if exams %}
+    <div class="grid grid-2">
+        {% for exam in exams %}
+        <div style="padding: 1.5rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <div class="d-flex justify-between align-center mb-2">
+                <h3 style="color: #333;">{{ exam.title }}</h3>
+                {% if exam.is_public %}
+                    <span class="badge badge-success">Công khai</span>
+                {% else %}
+                    <span class="badge badge-warning">Riêng tư</span>
+                {% endif %}
+            </div>
+            
+            <p style="color: #666; margin-bottom: 1rem;">{{ exam.description }}</p>
+            
+            <div style="display: grid; grid-template-columns: repeat(2, 1fr); gap: 0.5rem; margin-bottom: 1rem; font-size: 0.9rem; color: #666;">
+                <div>⏱️ Thời gian: {{ exam.duration }} phút</div>
+                <div>📄 Câu hỏi: {{ exam.question_count }}</div>
+                <div>🎯 Điểm đạt: {{ exam.passing_score }}%</div>
+                <div>📊 Tổng điểm: {{ exam.total_points }}</div>
+            </div>
+            
+            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; font-size: 0.85rem;">
+                <span class="badge badge-success">Dễ: {{ exam.difficulty_distribution.easy }}</span>
+                <span class="badge badge-warning">TB: {{ exam.difficulty_distribution.medium }}</span>
+                <span class="badge badge-danger">Khó: {{ exam.difficulty_distribution.hard }}</span>
+            </div>
+            
+            <div class="d-flex gap-1">
+                <a href="{{ url_for('exam.view_exam', exam_id=exam._id) }}" class="btn btn-sm btn-primary">Xem</a>
+                {% if session.role == 'teacher' and exam.owner_id|string == session.user_id %}
+                    <a href="{{ url_for('exam.edit_exam', exam_id=exam._id) }}" class="btn btn-sm btn-secondary">Sửa</a>
+                {% elif session.role == 'student' and exam.is_public %}
+                    <a href="{{ url_for('attempt.start_exam', exam_id=exam._id) }}" class="btn btn-sm btn-success">Làm bài</a>
+                {% endif %}
+            </div>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <div style="text-align: center; padding: 4rem;">
+        <p style="color: #666; font-size: 1.2rem; margin-bottom: 1rem;">
+            {% if session.role == 'teacher' %}
+                Chưa có đề thi nào
+            {% else %}
+                Chưa có đề thi công khai nào
+            {% endif %}
+        </p>
+        {% if session.role == 'teacher' %}
+        <a href="{{ url_for('exam.create_exam') }}" class="btn btn-primary">Tạo đề thi đầu tiên</a>
+        {% endif %}
+    </div>
+    {% endif %}
+</div>
+{% endblock %}

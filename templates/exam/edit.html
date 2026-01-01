@@ -1,0 +1,494 @@
+{% extends "base.html" %}
+
+{% block title %}Chỉnh sửa đề thi - {{ exam.title }}{% endblock %}
+
+{% block extra_css %}
+<style>
+.question-item {
+    background: #f8f9fa;
+    padding: 1.5rem;
+    border-radius: 8px;
+    margin-bottom: 1rem;
+    border-left: 4px solid #667eea;
+}
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0,0,0,0.5);
+    z-index: 1000;
+    overflow-y: auto;
+}
+.modal-content {
+    background: white;
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    border-radius: 12px;
+}
+.modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 1.5rem;
+}
+.close {
+    font-size: 2rem;
+    cursor: pointer;
+    color: #999;
+}
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="d-flex justify-between align-center mb-3">
+    <h1 style="color: white;">✏️ Chỉnh sửa đề thi</h1>
+    <div class="d-flex gap-2">
+        <a href="{{ url_for('exam.view_exam', exam_id=exam._id) }}" class="btn btn-secondary">⬅️ Quay lại</a>
+    </div>
+</div>
+
+<div class="grid grid-2">
+    <div class="card">
+        <h3 class="card-header">📋 Thông tin đề thi</h3>
+        <form method="POST">
+            <div class="form-group">
+                <label class="form-label">Tiêu đề</label>
+                <input type="text" name="title" class="form-control" value="{{ exam.title }}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Mô tả</label>
+                <textarea name="description" class="form-control" rows="3">{{ exam.description }}</textarea>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Loại đề thi</label>
+                <select name="exam_type" class="form-control" required>
+                    <option value="test" {% if exam.exam_type == 'test' %}selected{% endif %}>Kiểm tra (có giới hạn thời gian)</option>
+                    <option value="practice" {% if exam.exam_type == 'practice' %}selected{% endif %}>Ôn tập (không giới hạn, có giải thích)</option>
+                </select>
+            </div>
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Thời gian (phút)</label>
+                    <input type="number" name="duration" class="form-control" value="{{ exam.duration }}" min="0">
+                    <small style="color: #666;">Để 0 nếu không giới hạn thời gian</small>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Điểm đạt (%)</label>
+                    <input type="number" name="passing_score" class="form-control" value="{{ exam.passing_score }}" min="0" max="100" required>
+                </div>
+            </div>
+            <div class="form-group">
+                <label style="display: flex; align-items: center; gap: 0.5rem; cursor: pointer;">
+                    <input type="checkbox" name="is_public" {% if exam.is_public %}checked{% endif %}>
+                    <span>Công khai đề thi</span>
+                </label>
+            </div>
+            <button type="submit" class="btn btn-primary">Cập nhật thông tin</button>
+        </form>
+    </div>
+    
+    <div class="card">
+        <h3 class="card-header">🤖 Tạo câu hỏi bằng AI</h3>
+        <form method="POST" action="{{ url_for('exam.generate_questions', exam_id=exam._id) }}">
+            <div class="form-group">
+                <label class="form-label">Chọn tài liệu</label>
+                <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e0e0e0; border-radius: 4px; padding: 0.5rem;">
+                    {% for doc in documents %}
+                    <label style="display: block; padding: 0.5rem; cursor: pointer;">
+                        <input type="checkbox" name="document_ids" value="{{ doc._id }}">
+                        {{ doc.title }}
+                    </label>
+                    {% endfor %}
+                </div>
+            </div>
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label class="form-label">Dễ</label>
+                    <input type="number" name="num_easy" class="form-control" value="3" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Trung bình</label>
+                    <input type="number" name="num_medium" class="form-control" value="5" min="0">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Khó</label>
+                    <input type="number" name="num_hard" class="form-control" value="2" min="0">
+                </div>
+            </div>
+            <button type="submit" class="btn btn-success" style="width: 100%;">🤖 Tạo câu hỏi AI</button>
+        </form>
+    </div>
+</div>
+
+<div class="card mt-3">
+    <div class="card-header d-flex justify-between align-center">
+        <span>❓ Câu hỏi ({{ questions|length }})</span>
+        <button onclick="openModal('addModal')" class="btn btn-success btn-sm">➕ Thêm câu hỏi</button>
+    </div>
+    
+    {% if questions %}
+        {% for q in questions %}
+        <div class="question-item">
+            <div class="d-flex justify-between align-center mb-2">
+                <strong>Câu {{ loop.index }}: {{ q.question_text }}</strong>
+                <div class="d-flex gap-1">
+                    <span class="badge badge-{{ 'success' if q.difficulty == 'easy' else ('warning' if q.difficulty == 'medium' else 'danger') }}">
+                        {{ q.difficulty }}
+                    </span>
+                    <span class="badge badge-info">{{ q.question_type }}</span>
+                </div>
+            </div>
+            
+            {% if q.question_type == 'multiple_choice' %}
+            <div style="margin-left: 1rem;">
+                {% for opt in q.options %}
+                <div style="color: {{ '#28a745' if opt.startswith(q.correct_answer) else '#666' }};">
+                    {{ opt }} {% if opt.startswith(q.correct_answer) %}✓{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% elif q.question_type == 'true_false' %}
+            <div style="margin-left: 1rem; color: #28a745;">
+                Đáp án: {{ q.correct_answer }}
+            </div>
+            {% endif %}
+            
+            {% if q.explanation %}
+            <div class="alert alert-info mt-2" style="background: #e7f3ff; border-left: 3px solid #2196f3; padding: 0.75rem;">
+                <strong>💡 Giải thích:</strong> {{ q.explanation }}
+            </div>
+            {% endif %}
+            
+            <div class="d-flex gap-1 mt-2">
+                <button type="button" class="btn btn-sm btn-primary" onclick='editQuestion({{ q._id|string|tojson }}, {{ q.question_text|tojson }}, "{{ q.question_type }}", {{ q.options|tojson if q.question_type == "multiple_choice" else "[]" }}, "{{ q.correct_answer }}", "{{ q.difficulty }}", {{ q.points }}, {{ q.explanation|tojson if q.explanation else '""' }})'>Sửa</button>
+                <form method="POST" action="{{ url_for('exam.delete_question', exam_id=exam._id, question_id=q._id) }}" style="display: inline;" onsubmit="return confirm('Xóa câu hỏi này?');">
+                    <button type="submit" class="btn btn-sm btn-danger">Xóa</button>
+                </form>
+            </div>
+        </div>
+        {% endfor %}
+    {% else %}
+        <p style="color: #666; text-align: center; padding: 2rem;">Chưa có câu hỏi nào</p>
+    {% endif %}
+</div>
+
+<!-- Add Question Modal -->
+<div id="addModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>➕ Thêm câu hỏi</h3>
+            <span class="close" onclick="closeModal('addModal')">&times;</span>
+        </div>
+        <form method="POST" action="{{ url_for('exam.add_question', exam_id=exam._id) }}">
+            <div class="form-group">
+                <label class="form-label">Câu hỏi</label>
+                <textarea name="question_text" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div class="grid grid-3">
+                <div class="form-group">
+                    <label class="form-label">Loại câu hỏi</label>
+                    <select name="question_type" id="questionType" class="form-control" required>
+                        <option value="multiple_choice">Trắc nghiệm</option>
+                        <option value="true_false">Đúng/Sai</option>
+                        <option value="essay">Tự luận</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Độ khó</label>
+                    <select name="difficulty" class="form-control" required>
+                        <option value="easy">Dễ</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="hard">Khó</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Điểm</label>
+                    <input type="number" name="points" class="form-control" value="1" min="1" required>
+                </div>
+            </div>
+            
+            <div id="multipleChoice">
+                <div class="form-group">
+                    <label class="form-label">Đáp án A</label>
+                    <input type="text" name="option_a" class="form-control" placeholder="A. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án B</label>
+                    <input type="text" name="option_b" class="form-control" placeholder="B. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án C</label>
+                    <input type="text" name="option_c" class="form-control" placeholder="C. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án D</label>
+                    <input type="text" name="option_d" class="form-control" placeholder="D. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án đúng</label>
+                    <select name="correct_answer" class="form-control" required>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="trueFalse" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Đáp án đúng</label>
+                    <select name="correct_answer" class="form-control">
+                        <option value="Đúng">Đúng</option>
+                        <option value="Sai">Sai</option>
+                    </select>
+                </div>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Thêm câu hỏi</button>
+        </form>
+    </div>
+</div>
+
+<!-- Edit Question Modal -->
+<div id="editModal" class="modal">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3>✏️ Sửa câu hỏi</h3>
+            <span class="close" onclick="closeModal('editModal')">&times;</span>
+        </div>
+        <form method="POST" id="editQuestionForm" action="">
+            <input type="hidden" id="editQuestionId" name="question_id">
+            
+            <div class="form-group">
+                <label class="form-label">Nội dung câu hỏi</label>
+                <textarea id="editQuestionText" name="question_text" class="form-control" rows="3" required></textarea>
+            </div>
+            
+            <div class="grid grid-2">
+                <div class="form-group">
+                    <label class="form-label">Loại câu hỏi</label>
+                    <select id="editQuestionType" name="question_type" class="form-control" required>
+                        <option value="multiple_choice">Trắc nghiệm</option>
+                        <option value="true_false">Đúng/Sai</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Độ khó</label>
+                    <select id="editDifficulty" name="difficulty" class="form-control" required>
+                        <option value="easy">Dễ</option>
+                        <option value="medium">Trung bình</option>
+                        <option value="hard">Khó</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Điểm</label>
+                    <input type="number" id="editPoints" name="points" class="form-control" value="1" min="1" required>
+                </div>
+            </div>
+            
+            <div id="multipleChoiceEdit">
+                <div class="form-group">
+                    <label class="form-label">Đáp án A</label>
+                    <input type="text" id="editOptionA" name="option_a" class="form-control" placeholder="A. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án B</label>
+                    <input type="text" id="editOptionB" name="option_b" class="form-control" placeholder="B. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án C</label>
+                    <input type="text" id="editOptionC" name="option_c" class="form-control" placeholder="C. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án D</label>
+                    <input type="text" id="editOptionD" name="option_d" class="form-control" placeholder="D. ...">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án đúng</label>
+                    <select id="editCorrectAnswerMC" name="correct_answer" class="form-control" required>
+                        <option value="A">A</option>
+                        <option value="B">B</option>
+                        <option value="C">C</option>
+                        <option value="D">D</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div id="trueFalseEdit" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Đáp án đúng</label>
+                    <select id="editCorrectAnswerTF" name="correct_answer" class="form-control">
+                        <option value="Đúng">Đúng</option>
+                        <option value="Sai">Sai</option>
+                    </select>
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Giải thích (dành cho đề ôn tập)</label>
+                <textarea id="editExplanation" name="explanation" class="form-control" rows="3" placeholder="Giải thích tại sao đáp án này đúng, giúp học sinh hiểu rõ hơn..."></textarea>
+                <button type="button" id="generateExplanationBtn" class="btn btn-sm btn-success mt-1" onclick="generateExplanation()">
+                    🤖 Tạo giải thích AI
+                </button>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Cập nhật câu hỏi</button>
+        </form>
+    </div>
+</div>
+
+<script>
+function openModal(id) {
+    document.getElementById(id).style.display = 'block';
+}
+
+function closeModal(id) {
+    document.getElementById(id).style.display = 'none';
+}
+
+document.getElementById('questionType').addEventListener('change', function() {
+    const mc = document.getElementById('multipleChoice');
+    const tf = document.getElementById('trueFalse');
+    
+    if (this.value === 'multiple_choice') {
+        mc.style.display = 'block';
+        tf.style.display = 'none';
+    } else if (this.value === 'true_false') {
+        mc.style.display = 'none';
+        tf.style.display = 'block';
+    } else {
+        mc.style.display = 'none';
+        tf.style.display = 'none';
+    }
+});
+
+// Close modal when clicking outside
+// Close modal when clicking outside
+window.onclick = function(event) {
+    if (event.target.className === 'modal') {
+        event.target.style.display = 'none';
+    }
+}
+
+// Edit question function
+function editQuestion(id, text, type, options, correctAnswer, difficulty, points, explanation) {
+    document.getElementById('editQuestionId').value = id;
+    document.getElementById('editQuestionText').value = text;
+    document.getElementById('editQuestionType').value = type;
+    document.getElementById('editDifficulty').value = difficulty;
+    document.getElementById('editPoints').value = points;
+    document.getElementById('editExplanation').value = explanation || '';
+    
+    // Set form action URL
+    const form = document.getElementById('editQuestionForm');
+    form.action = `{{ url_for('exam.edit_question', exam_id=exam._id, question_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', id);
+    
+    const mcEdit = document.getElementById('multipleChoiceEdit');
+    const tfEdit = document.getElementById('trueFalseEdit');
+    
+    if (type === 'multiple_choice') {
+        mcEdit.style.display = 'block';
+        tfEdit.style.display = 'none';
+        
+        // Parse options if they're strings like "A. Answer text"
+        const optionMap = {};
+        options.forEach(opt => {
+            const match = opt.match(/^([A-D])\.\s*(.+)$/);
+            if (match) {
+                optionMap[match[1]] = match[2];
+            }
+        });
+        
+        document.getElementById('editOptionA').value = optionMap['A'] || '';
+        document.getElementById('editOptionB').value = optionMap['B'] || '';
+        document.getElementById('editOptionC').value = optionMap['C'] || '';
+        document.getElementById('editOptionD').value = optionMap['D'] || '';
+        document.getElementById('editCorrectAnswerMC').value = correctAnswer;
+    } else if (type === 'true_false') {
+        mcEdit.style.display = 'none';
+        tfEdit.style.display = 'block';
+        document.getElementById('editCorrectAnswerTF').value = correctAnswer;
+    }
+    
+    openModal('editModal');
+}
+
+// Generate explanation for current question
+function generateExplanation() {
+    const questionText = document.getElementById('editQuestionText').value;
+    const questionType = document.getElementById('editQuestionType').value;
+    let correctAnswer = '';
+    
+    if (questionType === 'multiple_choice') {
+        const letter = document.getElementById('editCorrectAnswerMC').value;
+        const optionField = document.getElementById('editOption' + letter);
+        correctAnswer = optionField ? optionField.value : '';
+    } else if (questionType === 'true_false') {
+        correctAnswer = document.getElementById('editCorrectAnswerTF').value;
+    }
+    
+    if (!questionText || !correctAnswer) {
+        alert('Vui lòng nhập câu hỏi và đáp án trước khi tạo giải thích');
+        return;
+    }
+    
+    const btn = document.getElementById('generateExplanationBtn');
+    btn.disabled = true;
+    btn.textContent = '⏳ Đang tạo...';
+    
+    const questionId = document.getElementById('editQuestionId').value;
+    
+    fetch(`{{ url_for('exam.generate_question_explanation', exam_id=exam._id, question_id='PLACEHOLDER') }}`.replace('PLACEHOLDER', questionId), {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            question_text: questionText,
+            correct_answer: correctAnswer
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            document.getElementById('editExplanation').value = data.explanation;
+        } else {
+            alert('Lỗi: ' + (data.error || 'Không thể tạo giải thích'));
+        }
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        alert('Lỗi khi tạo giải thích');
+    })
+    .finally(() => {
+        btn.disabled = false;
+        btn.textContent = '🤖 Tạo giải thích AI';
+    });
+}
+
+// Handle question type change in edit modal
+document.addEventListener('DOMContentLoaded', function() {
+    const editTypeSelect = document.getElementById('editQuestionType');
+    if (editTypeSelect) {
+        editTypeSelect.addEventListener('change', function() {
+            const mcEdit = document.getElementById('multipleChoiceEdit');
+            const tfEdit = document.getElementById('trueFalseEdit');
+            
+            if (this.value === 'multiple_choice') {
+                mcEdit.style.display = 'block';
+                tfEdit.style.display = 'none';
+            } else if (this.value === 'true_false') {
+                mcEdit.style.display = 'none';
+                tfEdit.style.display = 'block';
+            }
+        });
+    }
+});
+</script>
+{% endblock %}

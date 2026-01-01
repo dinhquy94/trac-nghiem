@@ -1,0 +1,157 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - Học sinh{% endblock %}
+
+{% block content %}
+<h1 style="color: white; margin-bottom: 2rem;">👨‍🎓 Dashboard Học sinh</h1>
+
+<div class="grid grid-3">
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">📝 Đề thi khả dụng</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #333;">{{ exams|length }}</p>
+        <a href="{{ url_for('exam.list_exams') }}" class="btn btn-primary btn-sm mt-2">Xem đề thi</a>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">✅ Bài đã làm</h3>
+        <p style="font-size: 2rem; font-weight: bold; color: #333;">{{ attempts|length }}</p>
+        <a href="{{ url_for('attempt.my_attempts') }}" class="btn btn-primary btn-sm mt-2">Xem kết quả</a>
+    </div>
+    
+    <div class="card">
+        <h3 style="color: #667eea; margin-bottom: 1rem;">🏆 Điểm trung bình</h3>
+        {% set total = attempts|selectattr('status', 'equalto', 'graded')|list %}
+        {% if total %}
+            {% set avg = (total|sum(attribute='percentage') / total|length)|round(1) %}
+            <p style="font-size: 2rem; font-weight: bold; color: #333;">{{ avg }}%</p>
+        {% else %}
+            <p style="font-size: 2rem; font-weight: bold; color: #999;">--</p>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mt-3">
+    <h3 class="card-header">📝 Đề thi khả dụng</h3>
+    {% if exams %}
+    <div class="grid grid-2">
+        {% for exam in exams %}
+        <div style="padding: 1.5rem; border: 2px solid #e0e0e0; border-radius: 8px;">
+            <h4 style="color: #333; margin-bottom: 0.5rem;">{{ exam.title }}</h4>
+            <p style="color: #666; margin-bottom: 1rem;">{{ exam.description }}</p>
+            <div style="display: flex; gap: 1rem; margin-bottom: 1rem; font-size: 0.9rem; color: #666;">
+                <span>⏱️ {{ exam.duration }} phút</span>
+                <span>📄 {{ exam.question_count }} câu</span>
+                <span>🎯 Điểm đạt: {{ exam.passing_score }}%</span>
+            </div>
+            <a href="{{ url_for('attempt.start_exam', exam_id=exam._id) }}" class="btn btn-success btn-sm">Làm bài</a>
+            <a href="{{ url_for('exam.view_exam', exam_id=exam._id) }}" class="btn btn-secondary btn-sm">Xem chi tiết</a>
+        </div>
+        {% endfor %}
+    </div>
+    {% else %}
+    <p style="color: #666; text-align: center; padding: 2rem;">Chưa có đề thi nào</p>
+    {% endif %}
+</div>
+
+<div class="card mt-3">
+    <h3 class="card-header">🏆 Bảng xếp hạng học sinh tích cực</h3>
+    {% if top_students %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th style="width: 60px; text-align: center;">Hạng</th>
+                <th>Học sinh</th>
+                <th style="text-align: center;">Huy chương</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for student in top_students %}
+            <tr style="{% if student._id|string == session.user_id %}background: #fff3cd; font-weight: bold;{% endif %}">
+                <td style="text-align: center; font-size: 1.2rem;">
+                    {% if loop.index == 1 %}
+                        🥇
+                    {% elif loop.index == 2 %}
+                        🥈
+                    {% elif loop.index == 3 %}
+                        🥉
+                    {% else %}
+                        {{ loop.index }}
+                    {% endif %}
+                </td>
+                <td>
+                    <div style="display: flex; align-items: center; gap: 0.75rem;">
+                        <img src="{{ student.avatar_url|default_avatar(student.username) }}" alt="Avatar" style="width: 40px; height: 40px; border-radius: 50%; border: 2px solid #667eea;" onerror="this.src='https://ui-avatars.com/api/?name={{ student.username }}&background=667eea&color=fff&size=128'">
+                        <div>
+                            <div style="font-weight: 600;">{{ student.full_name or student.username }}</div>
+                            <div style="font-size: 0.85rem; color: #666;">@{{ student.username }}</div>
+                        </div>
+                    </div>
+                </td>
+                <td style="text-align: center;">
+                    <span style="background: linear-gradient(135deg, #ffd700, #ffed4e); padding: 0.4rem 0.8rem; border-radius: 15px; font-weight: bold; font-size: 1.1rem;">
+                        🏆 {{ student.medals or 0 }}
+                    </span>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #666; text-align: center; padding: 2rem;">Chưa có dữ liệu xếp hạng</p>
+    {% endif %}
+</div>
+
+<div class="card mt-3">
+    <h3 class="card-header">✅ Bài làm gần đây</h3>
+    {% if attempts %}
+    <table class="table">
+        <thead>
+            <tr>
+                <th>Đề thi</th>
+                <th>Ngày làm</th>
+                <th>Điểm</th>
+                <th>Trạng thái</th>
+                <th>Thao tác</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for attempt in attempts[:10] %}
+            <tr>
+                <td>Đề thi #{{ attempt.exam_id }}</td>
+                <td>{{ attempt.created_at|datetime }}</td>
+                <td>
+                    {% if attempt.status == 'graded' %}
+                        {{ attempt.score }}/{{ attempt.max_score }} ({{ attempt.percentage }}%)
+                    {% else %}
+                        --
+                    {% endif %}
+                </td>
+                <td>
+                    {% if attempt.status == 'graded' %}
+                        {% if attempt.passed %}
+                            <span class="badge badge-success">Đạt</span>
+                        {% else %}
+                            <span class="badge badge-danger">Không đạt</span>
+                        {% endif %}
+                    {% elif attempt.status == 'submitted' %}
+                        <span class="badge badge-warning">Đang chấm</span>
+                    {% else %}
+                        <span class="badge badge-info">Đang làm</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if attempt.status == 'graded' %}
+                        <a href="{{ url_for('attempt.view_result', attempt_id=attempt._id) }}" class="btn btn-sm btn-primary">Xem kết quả</a>
+                    {% elif attempt.status == 'in_progress' %}
+                        <a href="{{ url_for('attempt.take_exam', attempt_id=attempt._id) }}" class="btn btn-sm btn-success">Tiếp tục</a>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <p style="color: #666; text-align: center; padding: 2rem;">Bạn chưa làm bài thi nào</p>
+    {% endif %}
+</div>
+{% endblock %}

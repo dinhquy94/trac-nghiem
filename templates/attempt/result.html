@@ -1,0 +1,139 @@
+{% extends "base.html" %}
+
+{% block title %}Kết quả thi - {{ exam.title }}{% endblock %}
+
+{% block content %}
+<div style="max-width: 900px; margin: 0 auto;">
+    <h1 style="color: white; text-align: center; margin-bottom: 2rem;">
+        {% if attempt.passed %}🎉{% else %}📊{% endif %} Kết quả thi
+    </h1>
+    
+    <div class="card text-center">
+        <h2 style="color: #333; margin-bottom: 1rem;">{{ exam.title }}</h2>
+        
+        <div style="background: {% if attempt.passed %}#d4edda{% else %}#f8d7da{% endif %}; padding: 2rem; border-radius: 12px; margin: 2rem 0;">
+            <div style="font-size: 3rem; font-weight: bold; color: {% if attempt.passed %}#155724{% else %}#721c24{% endif %}; margin-bottom: 0.5rem;">
+                {{ attempt.percentage }}%
+            </div>
+            <div style="font-size: 1.2rem; color: {% if attempt.passed %}#155724{% else %}#721c24{% endif %};">
+                {{ attempt.score }}/{{ attempt.max_score }} điểm
+            </div>
+            <div style="font-size: 1.5rem; font-weight: bold; margin-top: 1rem;">
+                {% if attempt.passed %}
+                    <span style="color: #28a745;">✅ ĐẠT</span>
+                {% else %}
+                    <span style="color: #dc3545;">❌ KHÔNG ĐẠT</span>
+                {% endif %}
+            </div>
+        </div>
+        
+        <div class="grid grid-3" style="text-align: left;">
+            <div>
+                <strong>Thời gian làm bài:</strong>
+                <p>{{ (attempt.submitted_at - attempt.started_at).total_seconds() // 60 }} phút</p>
+            </div>
+            <div>
+                <strong>Điểm đạt yêu cầu:</strong>
+                <p>{{ exam.passing_score }}%</p>
+            </div>
+            <div>
+                <strong>Số câu đúng:</strong>
+                <p>{{ (attempt.score / attempt.max_score * questions|length)|round|int }} / {{ questions|length }}</p>
+            </div>
+        </div>
+        
+        {% if student %}
+        <div style="margin-top: 1rem; padding-top: 1rem; border-top: 1px solid #e0e0e0;">
+            <strong>Học sinh:</strong> {{ student.username }}
+        </div>
+        {% endif %}
+    </div>
+    
+    <div class="card mt-3">
+        <h3 class="card-header">📝 Chi tiết bài làm</h3>
+        
+        {% for question in questions %}
+        <div style="padding: 1.5rem; border-bottom: 1px solid #e0e0e0;">
+            <div class="d-flex justify-between align-center mb-2">
+                <strong style="color: #333;">Câu {{ loop.index }}: {{ question.question_text }}</strong>
+                <div class="d-flex gap-1">
+                    <span class="badge badge-info">{{ question.points }} điểm</span>
+                    {% set student_answer = attempt.answers.get(question._id|string, '') %}
+                    {% set is_correct = student_answer.strip().upper() == question.correct_answer.strip().upper() %}
+                    {% if question.question_type in ['multiple_choice', 'true_false'] %}
+                        {% if is_correct %}
+                            <span class="badge badge-success">✓ Đúng</span>
+                        {% else %}
+                            <span class="badge badge-danger">✗ Sai</span>
+                        {% endif %}
+                    {% endif %}
+                </div>
+            </div>
+            
+            {% if question.question_type == 'multiple_choice' %}
+            <div style="margin-left: 1rem; margin-top: 1rem;">
+                {% for option in question.options %}
+                {% set is_student_choice = option.startswith(student_answer) %}
+                {% set is_correct_option = option.startswith(question.correct_answer) %}
+                <div style="padding: 0.5rem; margin: 0.25rem 0; border-radius: 4px; 
+                    background: {% if is_correct_option %}#d4edda{% elif is_student_choice %}#f8d7da{% else %}white{% endif %};
+                    border: 2px solid {% if is_correct_option %}#28a745{% elif is_student_choice %}#dc3545{% else %}#e0e0e0{% endif %};">
+                    {{ option }}
+                    {% if is_correct_option %}<strong style="color: #28a745;"> ← Đáp án đúng</strong>{% endif %}
+                    {% if is_student_choice and not is_correct_option %}<strong style="color: #dc3545;"> ← Bạn chọn</strong>{% endif %}
+                </div>
+                {% endfor %}
+            </div>
+            {% if exam.exam_type == 'practice' and question.explanation %}
+            <div class="alert alert-info mt-2" style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 1rem; margin-left: 1rem; margin-top: 1rem;">
+                <strong>💡 Giải thích:</strong> {{ question.explanation }}
+            </div>
+            {% endif %}
+            {% elif question.question_type == 'true_false' %}
+            <div style="margin-left: 1rem; margin-top: 1rem;">
+                <div style="padding: 0.5rem; margin: 0.25rem 0; border-radius: 4px; 
+                    background: {% if question.correct_answer == 'Đúng' %}#d4edda{% elif student_answer == 'Đúng' %}#f8d7da{% else %}white{% endif %};
+                    border: 2px solid {% if question.correct_answer == 'Đúng' %}#28a745{% elif student_answer == 'Đúng' %}#dc3545{% else %}#e0e0e0{% endif %};">
+                    A. Đúng
+                    {% if question.correct_answer == 'Đúng' %}<strong style="color: #28a745;"> ← Đáp án đúng</strong>{% endif %}
+                    {% if student_answer == 'Đúng' and question.correct_answer != 'Đúng' %}<strong style="color: #dc3545;"> ← Bạn chọn</strong>{% endif %}
+                </div>
+                <div style="padding: 0.5rem; margin: 0.25rem 0; border-radius: 4px; 
+                    background: {% if question.correct_answer == 'Sai' %}#d4edda{% elif student_answer == 'Sai' %}#f8d7da{% else %}white{% endif %};
+                    border: 2px solid {% if question.correct_answer == 'Sai' %}#28a745{% elif student_answer == 'Sai' %}#dc3545{% else %}#e0e0e0{% endif %};">
+                    B. Sai
+                    {% if question.correct_answer == 'Sai' %}<strong style="color: #28a745;"> ← Đáp án đúng</strong>{% endif %}
+                    {% if student_answer == 'Sai' and question.correct_answer != 'Sai' %}<strong style="color: #dc3545;"> ← Bạn chọn</strong>{% endif %}
+                </div>
+            </div>
+            {% if exam.exam_type == 'practice' and question.explanation %}
+            <div class="alert alert-info mt-2" style="background: #e7f3ff; border-left: 4px solid #2196f3; padding: 1rem; margin-left: 1rem; margin-top: 1rem;">
+                <strong>💡 Giải thích:</strong> {{ question.explanation }}
+            </div>
+            {% endif %}
+            {% elif question.question_type == 'essay' %}
+            <div style="margin-top: 1rem;">
+                <strong>Câu trả lời của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% endif %}
+        </div>
+        {% endfor %}
+    </div>
+    
+    <div class="text-center mt-3">
+        <a href="{{ url_for('main.student_dashboard') }}" class="btn btn-primary">⬅️ Về Dashboard</a>
+        <a href="{{ url_for('exam.list_exams') }}" class="btn btn-secondary">📝 Xem đề thi khác</a>
+    </div>
+</div>
+{% endblock %}
