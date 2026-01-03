@@ -120,7 +120,10 @@ def submit_exam(attempt_id):
                     score += question.get('points', 1)
         
         # Grade attempt
-        graded_attempt = ExamAttempt.grade(db, attempt_id, score, max_score, exam['passing_score'])
+        ExamAttempt.grade(db, attempt_id, score, max_score, exam['passing_score'])
+        
+        # Get the graded attempt to check if passed
+        graded_attempt = ExamAttempt.find_by_id(db, attempt_id)
         
         # Award medals to student
         from models.user import User

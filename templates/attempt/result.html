@@ -38,7 +38,11 @@
             </div>
             <div>
                 <strong>Số câu đúng:</strong>
+                {% if attempt.max_score > 0 %}
                 <p>{{ (attempt.score / attempt.max_score * questions|length)|round|int }} / {{ questions|length }}</p>
+                {% else %}
+                <p>0 / 0 (không có câu hỏi)</p>
+                {% endif %}
             </div>
         </div>
         
@@ -52,6 +56,7 @@
     <div class="card mt-3">
         <h3 class="card-header">📝 Chi tiết bài làm</h3>
         
+        {% if questions|length > 0 %}
         {% for question in questions %}
         <div style="padding: 1.5rem; border-bottom: 1px solid #e0e0e0;">
             <div class="d-flex justify-between align-center mb-2">
@@ -129,6 +134,11 @@
             {% endif %}
         </div>
         {% endfor %}
+        {% else %}
+        <div style="padding: 2rem; text-align: center; color: #999;">
+            <p>📭 Đề thi này không có câu hỏi</p>
+        </div>
+        {% endif %}
     </div>
     
     <div class="text-center mt-3">
