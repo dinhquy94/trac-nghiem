@@ -18,3 +18,8 @@ logs/
 *.log
 certs/
 !certs/.gitkeep
+mongodb_data/
+mongodb_config/
+logs/
+uploads/
+.git/
