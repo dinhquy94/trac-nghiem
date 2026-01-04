@@ -131,6 +131,136 @@
                 </div>
                 {% endif %}
             </div>
+            {% elif question.question_type == 'listening' %}
+            <div style="margin-top: 1rem;">
+                {% if question.media_url %}
+                <div style="margin-bottom: 1rem;">
+                    <p style="color: #667eea; font-weight: bold;">🎵 Audio gốc</p>
+                    <audio controls style="width: 100%;">
+                        <source src="{{ question.media_url }}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                </div>
+                {% endif %}
+                <strong>Câu trả lời của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% elif question.question_type == 'speaking' %}
+            <div style="margin-top: 1rem;">
+                <strong>Bài nói của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.support_content %}
+                <div style="margin-top: 1rem;">
+                    <strong>Đề bài:</strong>
+                    <div style="background: #e7f3ff; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.support_content }}
+                    </div>
+                </div>
+                {% endif %}
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% elif question.question_type == 'reading' %}
+            <div style="margin-top: 1rem;">
+                {% if question.media_url %}
+                <div style="margin-bottom: 1rem;">
+                    <p style="color: #667eea; font-weight: bold;">📖 Đoạn văn</p>
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+                        {{ question.media_url }}
+                    </div>
+                </div>
+                {% endif %}
+                <strong>Câu trả lời của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% elif question.question_type == 'writing' %}
+            <div style="margin-top: 1rem;">
+                {% if question.support_content %}
+                <div style="margin-bottom: 1rem;">
+                    <p style="color: #667eea; font-weight: bold;">📝 Hướng dẫn</p>
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px;">
+                        {{ question.support_content }}
+                    </div>
+                </div>
+                {% endif %}
+                <strong>Bài viết của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+            {% elif question.question_type == 'group' %}
+            <div style="margin-top: 1rem;">
+                {% if question.group_prompt %}
+                <div style="background: #f0f4ff; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                    <p style="color: #667eea; font-weight: bold; margin-bottom: 0.5rem;">📚 Nhóm câu hỏi</p>
+                    <p style="margin: 0;">{{ question.group_prompt }}</p>
+                </div>
+                {% endif %}
+                {% if question.media_url %}
+                <div style="margin-bottom: 1rem;">
+                    <p style="color: #667eea; font-weight: bold;">🎵 Media cho nhóm câu hỏi</p>
+                    {% if question.media_url.lower().endswith(('.mp3', '.wav', '.m4a', '.flac', '.ogg')) %}
+                    <audio controls style="width: 100%;">
+                        <source src="{{ question.media_url }}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    {% else %}
+                    <video controls style="width: 100%; max-height: 400px;">
+                        <source src="{{ question.media_url }}" type="video/mp4">
+                        Your browser does not support the video element.
+                    </video>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <strong>Câu trả lời của bạn:</strong>
+                <div style="background: #f8f9fa; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                    {{ student_answer }}
+                </div>
+                {% if question.correct_answer %}
+                <div style="margin-top: 1rem;">
+                    <strong>Gợi ý đáp án:</strong>
+                    <div style="background: #d4edda; padding: 1rem; border-radius: 4px; margin-top: 0.5rem;">
+                        {{ question.correct_answer }}
+                    </div>
+                </div>
+                {% endif %}
+            </div>
             {% endif %}
         </div>
         {% endfor %}

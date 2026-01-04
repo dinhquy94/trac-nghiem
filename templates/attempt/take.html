@@ -100,6 +100,83 @@
                     <input type="radio" name="question_{{ question._id }}" value="Sai" style="display: none;" required>
                     <span>B. Sai</span>
                 </label>
+            {% elif question.question_type == 'listening' %}
+                <div style="margin-bottom: 1.5rem;">
+                    {% if question.media_url %}
+                    <div style="margin-bottom: 1rem;">
+                        <p style="color: #667eea; font-weight: bold;">🎵 Nghe audio</p>
+                        <audio controls style="width: 100%; margin-bottom: 1rem;">
+                            <source src="{{ question.media_url }}" type="audio/mpeg">
+                            Your browser does not support the audio element.
+                        </audio>
+                    </div>
+                    {% endif %}
+                    {% if question.support_content %}
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="color: #666; margin-bottom: 0.5rem;"><strong>📄 Hỗ trợ:</strong></p>
+                        <p>{{ question.support_content }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <textarea name="question_{{ question._id }}" class="form-control" rows="4" placeholder="Nhập câu trả lời của bạn..." required></textarea>
+            {% elif question.question_type == 'speaking' %}
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #667eea; font-weight: bold;">🎤 Luyện nói</p>
+                    {% if question.support_content %}
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="color: #666; margin-bottom: 0.5rem;"><strong>Đề bài:</strong></p>
+                        <p>{{ question.support_content }}</p>
+                    </div>
+                    {% endif %}
+                    <div style="background: #fff3cd; padding: 1rem; border-radius: 8px;">
+                        <p style="margin: 0;"><small><strong>⚠️ Lưu ý:</strong> Vui lòng ghi âm câu trả lời của bạn hoặc mô tả nó chi tiết trong ô bên dưới.</small></p>
+                    </div>
+                </div>
+                <textarea name="question_{{ question._id }}" class="form-control" rows="4" placeholder="Mô tả câu trả lời hoặc ghi chú về bài nói của bạn..." required></textarea>
+            {% elif question.question_type == 'reading' %}
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #667eea; font-weight: bold;">📖 Đọc hiểu</p>
+                    {% if question.media_url %}
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="color: #666; margin-bottom: 0.5rem;"><strong>📄 Đoạn văn:</strong></p>
+                        <p>{{ question.media_url }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <textarea name="question_{{ question._id }}" class="form-control" rows="4" placeholder="Nhập câu trả lời của bạn..." required></textarea>
+            {% elif question.question_type == 'writing' %}
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #667eea; font-weight: bold;">✍️ Viết</p>
+                    {% if question.support_content %}
+                    <div style="background: #f8f9fa; padding: 1rem; border-radius: 8px; margin-bottom: 1rem;">
+                        <p style="color: #666; margin-bottom: 0.5rem;"><strong>Hướng dẫn:</strong></p>
+                        <p>{{ question.support_content }}</p>
+                    </div>
+                    {% endif %}
+                </div>
+                <textarea name="question_{{ question._id }}" class="form-control" rows="6" placeholder="Viết bài của bạn tại đây..." required></textarea>
+            {% elif question.question_type == 'group' %}
+                <div style="background: #f0f4ff; padding: 1.5rem; border-radius: 8px; margin-bottom: 1.5rem;">
+                    <p style="color: #667eea; font-weight: bold; margin-bottom: 1rem;">📚 Nhóm câu hỏi</p>
+                    <p style="color: #333; margin: 0;">{{ question.group_prompt }}</p>
+                </div>
+                {% if question.media_url %}
+                <div style="margin-bottom: 1.5rem;">
+                    <p style="color: #667eea; font-weight: bold;">🎵 Media cho nhóm câu hỏi</p>
+                    {% if question.media_url.lower().endswith(('.mp3', '.wav', '.m4a', '.flac', '.ogg')) %}
+                    <audio controls style="width: 100%; margin-bottom: 1rem;">
+                        <source src="{{ question.media_url }}" type="audio/mpeg">
+                        Your browser does not support the audio element.
+                    </audio>
+                    {% else %}
+                    <video controls style="width: 100%; max-height: 400px; margin-bottom: 1rem;">
+                        <source src="{{ question.media_url }}" type="video/mp4">
+                        Your browser does not support the video element.
+                    </video>
+                    {% endif %}
+                </div>
+                {% endif %}
+                <textarea name="question_{{ question._id }}" class="form-control" rows="5" placeholder="Nhập câu trả lời của bạn..." required></textarea>
             {% elif question.question_type == 'essay' %}
                 <textarea name="question_{{ question._id }}" class="form-control" rows="5" placeholder="Nhập câu trả lời của bạn..." required></textarea>
             {% endif %}
@@ -107,7 +184,7 @@
         {% endfor %}
         
         <div class="card text-center">
-            <button type="submit" class="btn btn-success" style="font-size: 1.2rem; padding: 1rem 3rem;" onclick="return confirm('Bạn có chắc muốn nộp bài?');">
+            <button type="submit" class="btn btn-success" style="font-size: 1.2rem; padding: 1rem 3rem;">
                 ✅ Nộp bài
             </button>
         </div>
@@ -170,29 +247,66 @@ window.addEventListener('beforeunload', function(e) {
     e.returnValue = '';
 });
 
-// Form submit handler
+// Form submit handler with validation
 document.getElementById('examForm').addEventListener('submit', function(e) {
     e.preventDefault();
     
-    const formData = new FormData(this);
+    // Kiểm tra tất cả các câu hỏi đã được trả lời
+    const questions = document.querySelectorAll('.question-card');
+    let unansweredCount = 0;
+    let unansweredQuestions = [];
     
-    fetch(this.action, {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            window.removeEventListener('beforeunload', arguments.callee);
-            window.location.href = data.redirect;
-        } else {
-            alert('Có lỗi xảy ra: ' + data.message);
+    questions.forEach((questionCard, index) => {
+        const questionNumber = index + 1;
+        
+        // Kiểm tra radio/checkbox
+        const radios = questionCard.querySelectorAll('input[type="radio"]');
+        if (radios.length > 0) {
+            const checked = Array.from(radios).some(r => r.checked);
+            if (!checked) {
+                unansweredCount++;
+                unansweredQuestions.push(questionNumber);
+            }
         }
-    })
-    .catch(error => {
-        alert('Có lỗi xảy ra khi nộp bài');
-        console.error(error);
+        
+        // Kiểm tra textarea
+        const textarea = questionCard.querySelector('textarea');
+        if (textarea && !textarea.value.trim()) {
+            unansweredCount++;
+            unansweredQuestions.push(questionNumber);
+        }
     });
+    
+    if (unansweredCount > 0) {
+        const questionList = unansweredQuestions.join(', ');
+        alert(`Vui lòng trả lời hết tất cả các câu hỏi.\n\nCâu chưa trả lời: ${questionList}`);
+        return false;
+    }
+    
+    // Nếu tất cả câu hỏi đã trả lời, yêu cầu xác nhận
+    if (confirm('Bạn có chắc muốn nộp bài?\n\nLưu ý: Không thể chỉnh sửa sau khi nộp!')) {
+        const formData = new FormData(this);
+        
+        fetch(this.action, {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.removeEventListener('beforeunload', arguments.callee);
+                window.location.href = data.redirect;
+            } else {
+                alert('Có lỗi xảy ra: ' + data.message);
+            }
+        })
+        .catch(error => {
+            alert('Có lỗi xảy ra khi nộp bài');
+            console.error(error);
+        });
+    }
+    
+    return false;
 });
 </script>
 {% endblock %}

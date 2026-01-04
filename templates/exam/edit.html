@@ -155,6 +155,36 @@
             <div style="margin-left: 1rem; color: #28a745;">
                 Đáp án: {{ q.correct_answer }}
             </div>
+            {% elif q.question_type in ['listening', 'speaking', 'reading', 'writing'] %}
+            <div style="margin-left: 1rem;">
+                {% if q.media_url %}
+                <div style="color: #667eea; margin-bottom: 0.5rem;">
+                    🎵 Media: <a href="{{ q.media_url }}" target="_blank">{{ q.media_url[:50] }}...</a>
+                </div>
+                {% endif %}
+                {% if q.support_content %}
+                <div style="color: #666; margin-bottom: 0.5rem;">
+                    📄 Hỗ trợ: {{ q.support_content[:100] }}...
+                </div>
+                {% endif %}
+                <div style="color: #28a745;">
+                    ✓ Đáp án mong đợi: {{ q.correct_answer[:100] }}...
+                </div>
+            </div>
+            {% elif q.question_type == 'group' %}
+            <div style="margin-left: 1rem; color: #667eea;">
+                📚 Nhóm câu hỏi
+                {% if q.group_prompt %}
+                <div style="margin-top: 0.5rem; color: #666;">
+                    Đề bài: {{ q.group_prompt[:100] }}...
+                </div>
+                {% endif %}
+                {% if q.media_url %}
+                <div style="margin-top: 0.5rem; color: #667eea;">
+                    🎵 Media: <a href="{{ q.media_url }}" target="_blank">{{ q.media_url[:50] }}...</a>
+                </div>
+                {% endif %}
+            </div>
             {% endif %}
             
             {% if q.explanation %}
@@ -183,7 +213,7 @@
             <h3>➕ Thêm câu hỏi</h3>
             <span class="close" onclick="closeModal('addModal')">&times;</span>
         </div>
-        <form method="POST" action="{{ url_for('exam.add_question', exam_id=exam._id) }}">
+        <form method="POST" action="{{ url_for('exam.add_question', exam_id=exam._id) }}" enctype="multipart/form-data">
             <div class="form-group">
                 <label class="form-label">Câu hỏi</label>
                 <textarea name="question_text" class="form-control" rows="3" required></textarea>
@@ -196,6 +226,13 @@
                         <option value="multiple_choice">Trắc nghiệm</option>
                         <option value="true_false">Đúng/Sai</option>
                         <option value="essay">Tự luận</option>
+                        <optgroup label="Tiếng Anh">
+                            <option value="listening">Nghe</option>
+                            <option value="speaking">Nói</option>
+                            <option value="reading">Đọc</option>
+                            <option value="writing">Viết</option>
+                            <option value="group">Nhóm câu hỏi</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="form-group">
@@ -250,6 +287,56 @@
                 </div>
             </div>
             
+            <!-- Listening, Speaking, Reading, Writing -->
+            <div id="skillQuestion" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">📁 Tải lên Media (Audio/Video)</label>
+                    <input type="file" name="media_file" class="form-control" accept="audio/*,video/*">
+                    <small style="color: #666; display: block; margin-top: 0.3rem;">Định dạng hỗ trợ: MP3, WAV, M4A, MP4, WebM, AVI, MOV (Max 50MB)</small>
+                </div>
+                <div class="form-group" style="text-align: center; color: #999; padding: 1rem 0;">
+                    <strong>HOẶC</strong>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Media URL (Link trực tiếp)</label>
+                    <input type="url" name="media_url" class="form-control" placeholder="https://example.com/audio.mp3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nội dung hỗ trợ (nếu có)</label>
+                    <textarea name="support_content" class="form-control" rows="3" placeholder="Văn bản, hình ảnh hoặc hướng dẫn..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án mong đợi</label>
+                    <textarea name="correct_answer" class="form-control" rows="3" placeholder="Mô tả đáp án đúng..." required></textarea>
+                </div>
+            </div>
+            
+            <!-- Nhóm câu hỏi -->
+            <div id="groupQuestion" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Đề bài chung (để trống để sử dụng câu hỏi làm đề)</label>
+                    <textarea name="group_prompt" class="form-control" rows="3" placeholder="Đoạn văn/bài tập chung cho cả nhóm..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📁 Media cho nhóm câu hỏi (Audio/Video, không bắt buộc)</label>
+                    <input type="file" name="media_file" class="form-control" accept="audio/*,video/*">
+                    <small style="color: #666; display: block; margin-top: 0.3rem;">Định dạng hỗ trợ: MP3, WAV, M4A, MP4, WebM, AVI, MOV (Max 50MB)</small>
+                </div>
+                <div class="form-group" style="text-align: center; color: #999; padding: 0.5rem 0;">
+                    <strong>HOẶC</strong>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Media URL (Link trực tiếp)</label>
+                    <input type="url" name="media_url" class="form-control" placeholder="https://example.com/audio.mp3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ghi chú: Để thêm câu hỏi con, hãy cập nhật câu hỏi này sau khi tạo</label>
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
+                        Loại câu hỏi nhóm cho phép tạo nhiều câu hỏi liên quan đến một đề bài chung.
+                    </small>
+                </div>
+            </div>
+            
             <button type="submit" class="btn btn-primary">Thêm câu hỏi</button>
         </form>
     </div>
@@ -262,7 +349,7 @@
             <h3>✏️ Sửa câu hỏi</h3>
             <span class="close" onclick="closeModal('editModal')">&times;</span>
         </div>
-        <form method="POST" id="editQuestionForm" action="">
+        <form method="POST" id="editQuestionForm" action="" enctype="multipart/form-data">
             <input type="hidden" id="editQuestionId" name="question_id">
             
             <div class="form-group">
@@ -276,6 +363,14 @@
                     <select id="editQuestionType" name="question_type" class="form-control" required>
                         <option value="multiple_choice">Trắc nghiệm</option>
                         <option value="true_false">Đúng/Sai</option>
+                        <option value="essay">Tự luận</option>
+                        <optgroup label="Tiếng Anh">
+                            <option value="listening">Nghe</option>
+                            <option value="speaking">Nói</option>
+                            <option value="reading">Đọc</option>
+                            <option value="writing">Viết</option>
+                            <option value="group">Nhóm câu hỏi</option>
+                        </optgroup>
                     </select>
                 </div>
                 <div class="form-group">
@@ -330,6 +425,56 @@
                 </div>
             </div>
             
+            <!-- Listening, Speaking, Reading, Writing -->
+            <div id="skillQuestionEdit" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">📁 Tải lên Media mới (Audio/Video)</label>
+                    <input type="file" id="editMediaFile" name="media_file" class="form-control" accept="audio/*,video/*">
+                    <small style="color: #666; display: block; margin-top: 0.3rem;">Định dạng hỗ trợ: MP3, WAV, M4A, MP4, WebM, AVI, MOV (Max 50MB)</small>
+                </div>
+                <div class="form-group" style="text-align: center; color: #999; padding: 0.5rem 0;">
+                    <strong>HOẶC</strong>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Media URL (Link trực tiếp)</label>
+                    <input type="url" id="editMediaUrl" name="media_url" class="form-control" placeholder="https://example.com/audio.mp3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Nội dung hỗ trợ (nếu có)</label>
+                    <textarea id="editSupportContent" name="support_content" class="form-control" rows="3" placeholder="Văn bản, hình ảnh hoặc hướng dẫn..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Đáp án mong đợi</label>
+                    <textarea id="editSkillCorrectAnswer" name="correct_answer" class="form-control" rows="3" placeholder="Mô tả đáp án đúng..." required></textarea>
+                </div>
+            </div>
+            
+            <!-- Nhóm câu hỏi -->
+            <div id="groupQuestionEdit" style="display: none;">
+                <div class="form-group">
+                    <label class="form-label">Đề bài chung (để trống để sử dụng câu hỏi làm đề)</label>
+                    <textarea id="editGroupPrompt" name="group_prompt" class="form-control" rows="3" placeholder="Đoạn văn/bài tập chung cho cả nhóm..."></textarea>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">📁 Media cho nhóm câu hỏi (Audio/Video, không bắt buộc)</label>
+                    <input type="file" id="editGroupMediaFile" name="media_file" class="form-control" accept="audio/*,video/*">
+                    <small style="color: #666; display: block; margin-top: 0.3rem;">Định dạng hỗ trợ: MP3, WAV, M4A, MP4, WebM, AVI, MOV (Max 50MB)</small>
+                </div>
+                <div class="form-group" style="text-align: center; color: #999; padding: 0.5rem 0;">
+                    <strong>HOẶC</strong>
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Media URL (Link trực tiếp)</label>
+                    <input type="url" id="editGroupMediaUrl" name="media_url" class="form-control" placeholder="https://example.com/audio.mp3">
+                </div>
+                <div class="form-group">
+                    <label class="form-label">Ghi chú: Để thêm câu hỏi con, hãy cập nhật câu hỏi này sau khi tạo</label>
+                    <small style="color: #666; display: block; margin-top: 0.5rem;">
+                        Loại câu hỏi nhóm cho phép tạo nhiều câu hỏi liên quan đến một đề bài chung.
+                    </small>
+                </div>
+            </div>
+            
             <div class="form-group">
                 <label class="form-label">Giải thích (dành cho đề ôn tập)</label>
                 <textarea id="editExplanation" name="explanation" class="form-control" rows="3" placeholder="Giải thích tại sao đáp án này đúng, giúp học sinh hiểu rõ hơn..."></textarea>
@@ -355,16 +500,24 @@ function closeModal(id) {
 document.getElementById('questionType').addEventListener('change', function() {
     const mc = document.getElementById('multipleChoice');
     const tf = document.getElementById('trueFalse');
+    const skill = document.getElementById('skillQuestion');
+    const group = document.getElementById('groupQuestion');
     
+    // Ẩn tất cả
+    mc.style.display = 'none';
+    tf.style.display = 'none';
+    skill.style.display = 'none';
+    group.style.display = 'none';
+    
+    // Hiển thị theo loại câu hỏi
     if (this.value === 'multiple_choice') {
         mc.style.display = 'block';
-        tf.style.display = 'none';
     } else if (this.value === 'true_false') {
-        mc.style.display = 'none';
         tf.style.display = 'block';
-    } else {
-        mc.style.display = 'none';
-        tf.style.display = 'none';
+    } else if (['listening', 'speaking', 'reading', 'writing'].includes(this.value)) {
+        skill.style.display = 'block';
+    } else if (this.value === 'group') {
+        group.style.display = 'block';
     }
 });
 
@@ -376,7 +529,7 @@ window.onclick = function(event) {
     }
 }
 
-// Edit question function
+// Edit question function - Note: Need to fetch full question data from server for new types
 function editQuestion(id, text, type, options, correctAnswer, difficulty, points, explanation) {
     document.getElementById('editQuestionId').value = id;
     document.getElementById('editQuestionText').value = text;
@@ -391,10 +544,17 @@ function editQuestion(id, text, type, options, correctAnswer, difficulty, points
     
     const mcEdit = document.getElementById('multipleChoiceEdit');
     const tfEdit = document.getElementById('trueFalseEdit');
+    const skillEdit = document.getElementById('skillQuestionEdit');
+    const groupEdit = document.getElementById('groupQuestionEdit');
+    
+    // Hide all sections
+    mcEdit.style.display = 'none';
+    tfEdit.style.display = 'none';
+    skillEdit.style.display = 'none';
+    groupEdit.style.display = 'none';
     
     if (type === 'multiple_choice') {
         mcEdit.style.display = 'block';
-        tfEdit.style.display = 'none';
         
         // Parse options if they're strings like "A. Answer text"
         const optionMap = {};
@@ -411,9 +571,15 @@ function editQuestion(id, text, type, options, correctAnswer, difficulty, points
         document.getElementById('editOptionD').value = optionMap['D'] || '';
         document.getElementById('editCorrectAnswerMC').value = correctAnswer;
     } else if (type === 'true_false') {
-        mcEdit.style.display = 'none';
         tfEdit.style.display = 'block';
         document.getElementById('editCorrectAnswerTF').value = correctAnswer;
+    } else if (['listening', 'speaking', 'reading', 'writing'].includes(type)) {
+        skillEdit.style.display = 'block';
+        document.getElementById('editSkillCorrectAnswer').value = correctAnswer;
+        // Note: media_url and support_content need to be fetched from server
+    } else if (type === 'group') {
+        groupEdit.style.display = 'block';
+        // Note: group_prompt needs to be fetched from server
     }
     
     openModal('editModal');
@@ -479,13 +645,24 @@ document.addEventListener('DOMContentLoaded', function() {
         editTypeSelect.addEventListener('change', function() {
             const mcEdit = document.getElementById('multipleChoiceEdit');
             const tfEdit = document.getElementById('trueFalseEdit');
+            const skillEdit = document.getElementById('skillQuestionEdit');
+            const groupEdit = document.getElementById('groupQuestionEdit');
             
+            // Hide all
+            mcEdit.style.display = 'none';
+            tfEdit.style.display = 'none';
+            skillEdit.style.display = 'none';
+            groupEdit.style.display = 'none';
+            
+            // Show based on type
             if (this.value === 'multiple_choice') {
                 mcEdit.style.display = 'block';
-                tfEdit.style.display = 'none';
             } else if (this.value === 'true_false') {
-                mcEdit.style.display = 'none';
                 tfEdit.style.display = 'block';
+            } else if (['listening', 'speaking', 'reading', 'writing'].includes(this.value)) {
+                skillEdit.style.display = 'block';
+            } else if (this.value === 'group') {
+                groupEdit.style.display = 'block';
             }
         });
     }

@@ -11,7 +11,7 @@ class Config:
     
     # Upload settings
     UPLOAD_FOLDER = os.path.join(os.path.dirname(__file__), os.getenv('UPLOAD_FOLDER', 'uploads'))
-    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 16 * 1024 * 1024))  # 16MB
+    MAX_CONTENT_LENGTH = int(os.getenv('MAX_CONTENT_LENGTH', 100 * 1024 * 1024))  # 100MB for media files
     ALLOWED_EXTENSIONS = {'pdf', 'docx', 'txt', 'md'}
     
     # Gemini AI

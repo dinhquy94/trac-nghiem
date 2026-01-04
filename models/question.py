@@ -5,17 +5,26 @@ class Question:
     """Question model"""
     
     @staticmethod
-    def create(db, exam_id, question_text, question_type, options, correct_answer, difficulty, points=1, explanation=''):
-        """Create a new question"""
+    def create(db, exam_id, question_text, question_type, options, correct_answer, difficulty, points=1, explanation='', media_url='', support_content='', group_prompt=''):
+        """Create a new question
+        
+        Args:
+            media_url: URL for listening/speaking/reading/writing questions (audio/video)
+            support_content: Supporting text/content for skill questions
+            group_prompt: Prompt text for group questions (where multiple questions share one prompt)
+        """
         question_data = {
             'exam_id': ObjectId(exam_id) if isinstance(exam_id, str) else exam_id,
             'question_text': question_text,
-            'question_type': question_type,  # 'multiple_choice', 'true_false', 'essay'
+            'question_type': question_type,  # 'multiple_choice', 'true_false', 'essay', 'listening', 'speaking', 'reading', 'writing', 'group'
             'options': options,  # List of options for multiple choice
             'correct_answer': correct_answer,  # Correct answer(s)
             'difficulty': difficulty,  # 'easy', 'medium', 'hard'
             'points': points,
             'explanation': explanation,  # AI-generated explanation for learning
+            'media_url': media_url,  # URL for media (listening/speaking/reading/writing)
+            'support_content': support_content,  # Supporting content for skill questions
+            'group_prompt': group_prompt,  # Shared prompt for group questions
             'created_at': datetime.utcnow(),
             'updated_at': datetime.utcnow()
         }

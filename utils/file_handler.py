@@ -69,3 +69,45 @@ def save_uploaded_file(file, upload_folder):
     
     file.save(file_path)
     return file_path
+
+def save_media_file(file, upload_folder, allowed_extensions=None):
+    """Save media file (audio/video) for questions
+    
+    Args:
+        file: File object from request.files
+        upload_folder: Base upload folder
+        allowed_extensions: Tuple of allowed extensions (default: mp3, wav, m4a, mp4, webm, avi, mov)
+    
+    Returns:
+        Tuple of (file_path, relative_url) or (None, None) if validation fails
+    """
+    if allowed_extensions is None:
+        allowed_extensions = ('mp3', 'wav', 'm4a', 'mp4', 'webm', 'avi', 'mov', 'flac', 'ogg', '3gp')
+    
+    if not file or file.filename == '':
+        return None, None
+    
+    # Check file extension
+    if not allowed_file(file.filename, allowed_extensions):
+        return None, None
+    
+    # Create media subfolder
+    media_folder = os.path.join(upload_folder, 'media')
+    if not os.path.exists(media_folder):
+        os.makedirs(media_folder, exist_ok=True)
+    
+    # Generate unique filename
+    from datetime import datetime
+    from werkzeug.utils import secure_filename
+    
+    filename = secure_filename(file.filename)
+    timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+    ext = filename.rsplit('.', 1)[1].lower() if '.' in filename else 'bin'
+    unique_filename = f"media_{timestamp}.{ext}"
+    
+    file_path = os.path.join(media_folder, unique_filename)
+    file.save(file_path)
+    
+    # Return relative URL for serving
+    relative_url = f'/uploads/media/{unique_filename}'
+    return file_path, relative_url

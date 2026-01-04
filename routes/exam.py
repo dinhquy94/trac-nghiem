@@ -6,6 +6,7 @@ from models.document import Document
 from models.exam_attempt import ExamAttempt
 from utils.gemini_service import GeminiAI
 from utils.pdf_exporter import PDFExporter
+from utils.file_handler import save_media_file
 from bson.objectid import ObjectId
 import os
 from datetime import datetime
@@ -199,6 +200,16 @@ def add_question(exam_id):
     difficulty = request.form.get('difficulty')
     points = int(request.form.get('points', 1))
     
+    # Initialize optional fields
+    media_url = ''
+    support_content = ''
+    group_prompt = ''
+    options = []
+    correct_answer = ''
+    
+    # Get upload folder
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    
     # Get options based on question type
     if question_type == 'multiple_choice':
         options = [
@@ -211,13 +222,43 @@ def add_question(exam_id):
     elif question_type == 'true_false':
         options = ['Đúng', 'Sai']
         correct_answer = request.form.get('correct_answer')
+    elif question_type in ['listening', 'speaking', 'reading', 'writing']:
+        # Skill-based questions - handle both URL and file upload
+        if 'media_file' in request.files and request.files['media_file'].filename:
+            # Upload media file
+            _, media_url = save_media_file(request.files['media_file'], upload_folder)
+            if not media_url:
+                flash('Định dạng media không được hỗ trợ. Hỗ trợ: mp3, wav, m4a, mp4, webm, avi, mov', 'danger')
+                return redirect(url_for('exam.edit_exam', exam_id=exam_id))
+        else:
+            # Use media URL if provided
+            media_url = request.form.get('media_url', '')
+        
+        support_content = request.form.get('support_content', '')
+        correct_answer = request.form.get('correct_answer', '')
+    elif question_type == 'group':
+        # Group questions with shared prompt - can also have media
+        group_prompt = request.form.get('group_prompt', '')
+        
+        # Handle media file for group questions
+        if 'media_file' in request.files and request.files['media_file'].filename:
+            _, media_url = save_media_file(request.files['media_file'], upload_folder)
+            if not media_url:
+                flash('Định dạng media không được hỗ trợ. Hỗ trợ: mp3, wav, m4a, mp4, webm, avi, mov', 'danger')
+                return redirect(url_for('exam.edit_exam', exam_id=exam_id))
+        else:
+            media_url = request.form.get('media_url', '')
+        
+        correct_answer = request.form.get('correct_answer', '')
     else:  # essay
         options = []
         correct_answer = request.form.get('sample_answer', '')
     
     try:
         Question.create(db, exam_id, question_text, question_type, 
-                       options, correct_answer, difficulty, points)
+                       options, correct_answer, difficulty, points, 
+                       media_url=media_url, support_content=support_content, 
+                       group_prompt=group_prompt)
         Exam.update_statistics(db, exam_id)
         flash('Thêm câu hỏi thành công!', 'success')
     except Exception as e:
@@ -242,6 +283,16 @@ def edit_question(exam_id, question_id):
     points = int(request.form.get('points', 1))
     explanation = request.form.get('explanation', '')
     
+    # Initialize optional fields
+    media_url = ''
+    support_content = ''
+    group_prompt = ''
+    options = []
+    correct_answer = ''
+    
+    # Get upload folder
+    upload_folder = current_app.config.get('UPLOAD_FOLDER', 'uploads')
+    
     # Get options based on question type
     if question_type == 'multiple_choice':
         options = [
@@ -254,6 +305,34 @@ def edit_question(exam_id, question_id):
     elif question_type == 'true_false':
         options = ['Đúng', 'Sai']
         correct_answer = request.form.get('correct_answer')
+    elif question_type in ['listening', 'speaking', 'reading', 'writing']:
+        # Skill-based questions - handle both URL and file upload
+        if 'media_file' in request.files and request.files['media_file'].filename:
+            # Upload new media file
+            _, media_url = save_media_file(request.files['media_file'], upload_folder)
+            if not media_url:
+                flash('Định dạng media không được hỗ trợ. Hỗ trợ: mp3, wav, m4a, mp4, webm, avi, mov', 'danger')
+                return redirect(url_for('exam.edit_exam', exam_id=exam_id))
+        else:
+            # Use media URL if provided or keep existing
+            media_url = request.form.get('media_url', '')
+        
+        support_content = request.form.get('support_content', '')
+        correct_answer = request.form.get('correct_answer', '')
+    elif question_type == 'group':
+        # Group questions with shared prompt - can also have media
+        group_prompt = request.form.get('group_prompt', '')
+        
+        # Handle media file for group questions
+        if 'media_file' in request.files and request.files['media_file'].filename:
+            _, media_url = save_media_file(request.files['media_file'], upload_folder)
+            if not media_url:
+                flash('Định dạng media không được hỗ trợ. Hỗ trợ: mp3, wav, m4a, mp4, webm, avi, mov', 'danger')
+                return redirect(url_for('exam.edit_exam', exam_id=exam_id))
+        else:
+            media_url = request.form.get('media_url', '')
+        
+        correct_answer = request.form.get('correct_answer', '')
     else:  # essay
         options = []
         correct_answer = request.form.get('sample_answer', '')
@@ -265,7 +344,10 @@ def edit_question(exam_id, question_id):
         'correct_answer': correct_answer,
         'difficulty': difficulty,
         'points': points,
-        'explanation': explanation
+        'explanation': explanation,
+        'media_url': media_url,
+        'support_content': support_content,
+        'group_prompt': group_prompt
     }
     
     try:

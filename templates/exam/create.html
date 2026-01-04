@@ -28,7 +28,7 @@
         <div class="grid grid-2">
             <div class="form-group" id="durationGroup">
                 <label class="form-label">Thời gian (phút) <span style="color: red;">*</span></label>
-                <input type="number" name="duration" class="form-control" value="60" min="1" required>
+                <input type="number" name="duration" class="form-control" value="60" min="1" id="durationInput" required>
             </div>
             
             <div class="form-group">
@@ -45,7 +45,7 @@
         </div>
         
         <div class="d-flex gap-2">
-            <button type="submit" class="btn btn-primary">Tạo đề thi</button>
+            <button type="submit" class="btn btn-primary" id="submitBtn">Tạo đề thi</button>
             <a href="{{ url_for('exam.list_exams') }}" class="btn btn-secondary">Hủy</a>
         </div>
     </form>
@@ -54,17 +54,45 @@
 <script>
 document.getElementById('examType').addEventListener('change', function() {
     const durationGroup = document.getElementById('durationGroup');
-    const durationInput = document.querySelector('input[name="duration"]');
+    const durationInput = document.getElementById('durationInput');
+    const passingScoreInput = document.querySelector('input[name="passing_score"]');
     
     if (this.value === 'practice') {
+        // Ôn tập: ẩn thời gian, không yêu cầu điểm đạt
         durationGroup.style.display = 'none';
         durationInput.required = false;
         durationInput.value = 0;
+        passingScoreInput.required = false;
+        passingScoreInput.value = 0;
     } else {
+        // Kiểm tra: hiển thị thời gian, yêu cầu điểm đạt
         durationGroup.style.display = 'block';
         durationInput.required = true;
         durationInput.value = 60;
+        passingScoreInput.required = true;
+        passingScoreInput.value = 50;
     }
+});
+
+// Validate form trước khi submit
+document.querySelector('form').addEventListener('submit', function(e) {
+    const title = document.querySelector('input[name="title"]').value.trim();
+    const examType = document.getElementById('examType').value;
+    const duration = parseInt(document.getElementById('durationInput').value);
+    
+    if (!title) {
+        e.preventDefault();
+        alert('Vui lòng nhập tiêu đề đề thi');
+        return false;
+    }
+    
+    if (examType === 'test' && duration < 1) {
+        e.preventDefault();
+        alert('Vui lòng nhập thời gian làm bài hợp lệ (tối thiểu 1 phút)');
+        return false;
+    }
+    
+    return true;
 });
 </script>
 {% endblock %}
