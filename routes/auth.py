@@ -1,4 +1,4 @@
-from flask import Blueprint, render_template, request, redirect, url_for, flash, session
+from flask import Blueprint, render_template, request, redirect, url_for, flash, session, current_app
 from werkzeug.security import check_password_hash
 from models.user import User
 from functools import wraps
@@ -130,10 +130,12 @@ def profile():
 def update_profile():
     """Update user profile"""
     from app import db
+    from werkzeug.utils import secure_filename
+    import os
+    from datetime import datetime
     
     full_name = request.form.get('full_name')
     email = request.form.get('email')
-    avatar_url = request.form.get('avatar_url', '')
     
     if not all([full_name, email]):
         flash('Vui lòng điền đầy đủ thông tin', 'danger')
@@ -150,15 +152,54 @@ def update_profile():
         'email': email
     }
     
-    # Update avatar if provided, otherwise use default
+    # Handle avatar upload or URL
+    avatar_url = None
+    if 'avatar_file' in request.files:
+        file = request.files['avatar_file']
+        if file and file.filename != '':
+            # Check file extension
+            ALLOWED_EXTENSIONS = {'png', 'jpg', 'jpeg', 'gif', 'webp'}
+            if '.' in file.filename and file.filename.rsplit('.', 1)[1].lower() in ALLOWED_EXTENSIONS:
+                # Check file size (5MB max)
+                file.seek(0, os.SEEK_END)
+                file_size = file.tell()
+                file.seek(0)
+                
+                if file_size > 5 * 1024 * 1024:
+                    flash('Kích thước ảnh không được vượt quá 5MB!', 'danger')
+                    return redirect(url_for('auth.profile'))
+                
+                # Generate unique filename
+                filename = secure_filename(file.filename)
+                timestamp = datetime.now().strftime('%Y%m%d_%H%M%S')
+                name, ext = os.path.splitext(filename)
+                unique_filename = f"avatar_{session['user_id']}_{timestamp}{ext}"
+                
+                # Save file
+                upload_folder = current_app.config['UPLOAD_FOLDER']
+                avatars_folder = os.path.join(upload_folder, 'avatars')
+                os.makedirs(avatars_folder, exist_ok=True)
+                
+                filepath = os.path.join(avatars_folder, unique_filename)
+                file.save(filepath)
+                
+                # Set avatar URL (relative path for serving)
+                avatar_url = f'/uploads/avatars/{unique_filename}'
+            else:
+                flash('Định dạng file không hợp lệ! Hỗ trợ: JPG, PNG, GIF, WEBP', 'danger')
+                return redirect(url_for('auth.profile'))
+        elif not file or file.filename == '':
+            # If no file uploaded, check for URL input
+            avatar_url = request.form.get('avatar_url', '').strip()
+    else:
+        avatar_url = request.form.get('avatar_url', '').strip()
+    
+    # Update avatar if provided
     if avatar_url:
         update_data['avatar_url'] = avatar_url
-    else:
-        user = User.find_by_id(db, session['user_id'])
-        update_data['avatar_url'] = 'https://ui-avatars.com/api/?name=' + user['username'] + '&background=667eea&color=fff'
     
     try:
-        User.update(db, session['user_id'], update_data)
+        User.update_profile(db, session['user_id'], update_data)
         flash('Cập nhật thông tin thành công!', 'success')
     except Exception as e:
         flash(f'Có lỗi xảy ra: {str(e)}', 'danger')
